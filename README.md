@@ -27,11 +27,34 @@ Set-Location .\01-inefficient
 - Integration and benchmark SQL data lives under `seed/`, outside every
   application project.
 
-## Container Runtime and Integration Tests
+## Prerequisites
 
 - .NET 10 SDK
 - PowerShell 7 (`pwsh`)
 - Either Podman with Compose support or Docker Desktop/Docker Engine
+
+### Install Crank
+
+Crank is required only to run the benchmark. You do not need it to build the
+API or run unit and integration tests.
+
+Install and verify the controller and agent:
+
+```powershell
+dotnet tool install --global Microsoft.Crank.Controller --version "0.2.0-*"
+dotnet tool install --global Microsoft.Crank.Agent --version "0.2.0-*"
+
+crank --help
+crank-agent --help
+```
+
+The first tool provides the `crank` command. The second provides the local
+`crank-agent` process, which executes benchmark jobs.
+
+Manual installation is optional. `crank\Run-Crank.ps1` already installs or
+updates both tools before it runs the benchmark.
+
+## Container Runtime and Integration Tests
 
 Choose **either Podman or Docker** for this demo. Do not run both at the same
 time: both Compose projects use the same SQL Server port and container name.

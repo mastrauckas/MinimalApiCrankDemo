@@ -102,7 +102,7 @@ You can also press **Run Tests** in the IDE. The integration-test lifecycle is:
 3. Start a fresh test-only SQL Server container.
 4. Authenticate from Windows through `127.0.0.1:14333`.
 5. Recreate the disposable `CrankDemo` database.
-6. Run `scripts/Invoke-Migrations.ps1`.
+6. Run `scripts/Invoke-LocalMigrations.ps1`.
 7. Verify migrations inserted no Identity or application seed data.
 8. Run `scripts/Seed-IntegrationDatabase.ps1` twice.
 9. Start the API test host and run the integration tests.
@@ -156,10 +156,11 @@ podman compose up -d sqlserver
 
 Use `docker compose` on the last line if Docker is your chosen runtime.
 
-Apply the Database project's schema-only EF Core migrations:
+Apply the Database project's schema-only EF Core migrations for local test or
+benchmark tooling:
 
 ```powershell
-.\scripts\Invoke-Migrations.ps1
+.\scripts\Invoke-LocalMigrations.ps1
 ```
 
 Seed an already migrated integration database:
@@ -180,6 +181,53 @@ files are:
 
 - `seed/integration/001-seed-data.sql`
 - `seed/benchmark/001-seed-data.sql`
+
+## Production Migrations
+
+The production API must never apply migrations automatically at startup.
+Deployments apply a reviewed EF Core migration bundle before starting the new
+API version.
+
+Build a versioned bundle from the Database project:
+
+```powershell
+.\scripts\Build-MigrationBundle.ps1 -Version '1.0.0'
+```
+
+This command creates
+`artifacts/migration-bundles/1.0.0/efbundle.exe`. The script runs the
+equivalent EF Core command:
+
+```powershell
+dotnet tool run dotnet-ef migrations bundle `
+  --project .\src\MinimalApiCrankDemo.Database `
+  --startup-project .\src\MinimalApiCrankDemo.Database `
+  --output .\artifacts\migration-bundles\1.0.0\efbundle.exe `
+  --force
+```
+
+Use this deployment order:
+
+1. Build the versioned migration bundle.
+2. Back up the production database.
+3. Obtain the connection string from an Azure DevOps secret variable or
+   Azure Key Vault.
+4. Run `Invoke-ProductionMigrations.ps1`.
+5. Deploy or restart the API.
+6. Run the API health checks.
+
+For example, map the secret to a masked pipeline environment variable, then
+run:
+
+```powershell
+.\scripts\Invoke-ProductionMigrations.ps1 `
+  -ConnectionString $env:PRODUCTION_SQL_CONNECTION `
+  -BundlePath '.\artifacts\migration-bundles\1.0.0\efbundle.exe'
+```
+
+The wrapper contains no connection string or environment-specific value. The
+migration workflow applies schema changes only; it never runs production seed
+data.
 
 ## Start and call the API
 

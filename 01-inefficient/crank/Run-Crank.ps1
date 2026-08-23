@@ -90,7 +90,7 @@ SQLCMDPASSWORD="$MSSQL_SA_PASSWORD" /opt/mssql-tools18/bin/sqlcmd \
         throw 'SQL Server was not reachable within 120 seconds.'
     }
 
-    & (Join-Path $projectRoot 'scripts/Invoke-Migrations.ps1')
+    & (Join-Path $projectRoot 'scripts/Invoke-LocalMigrations.ps1')
     & (Join-Path $projectRoot 'scripts/Seed-BenchmarkDatabase.ps1')
 }
 finally {

@@ -1,30 +1,27 @@
 [CmdletBinding()]
-param()
+param(
+    [Parameter(Mandatory)]
+    [ValidateNotNullOrEmpty()]
+    [string] $ConnectionString,
+
+    [Parameter()]
+    [ValidateNotNullOrEmpty()]
+    [string] $BundlePath = (Join-Path `
+        (Split-Path -Parent $PSScriptRoot) `
+        'artifacts/efbundle.exe')
+)
 
 $ErrorActionPreference = 'Stop'
-$projectRoot = Split-Path -Parent $PSScriptRoot
-$settings = & (Join-Path $PSScriptRoot 'Get-DatabaseSettings.ps1')
-$databaseProject =
-    '.\src\MinimalApiCrankDemo.Database\' +
-    'MinimalApiCrankDemo.Database.csproj'
-$env:ConnectionStrings__CrankDemo =
-    "Server=$($settings.HostName),$($settings.Port);" +
-    "Database=$($settings.Database);User ID=$($settings.UserName);" +
-    "Password=$($settings.Password);TrustServerCertificate=True"
+$pathApi = $ExecutionContext.SessionState.Path
+$resolvedBundlePath =
+    $pathApi.GetUnresolvedProviderPathFromPSPath($BundlePath)
 
-Push-Location $projectRoot
-try {
-    dotnet tool restore
-    if ($LASTEXITCODE -ne 0) {
-        throw "dotnet tool restore failed with exit code $LASTEXITCODE."
-    }
-
-    dotnet tool run dotnet-ef database update --project `
-        $databaseProject --startup-project $databaseProject
-    if ($LASTEXITCODE -ne 0) {
-        throw "EF migration failed with exit code $LASTEXITCODE."
-    }
+if (-not (Test-Path -LiteralPath $resolvedBundlePath -PathType Leaf)) {
+    throw "Migration bundle not found: $resolvedBundlePath"
 }
-finally {
-    Pop-Location
+
+& $resolvedBundlePath --connection $ConnectionString
+$migrationExitCode = $LASTEXITCODE
+if ($migrationExitCode -ne 0) {
+    throw "Migration bundle failed with exit code $migrationExitCode."
 }

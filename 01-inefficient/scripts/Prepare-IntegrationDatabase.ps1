@@ -167,7 +167,7 @@ SQLCMDPASSWORD="$MSSQL_SA_PASSWORD" /opt/mssql-tools18/bin/sqlcmd \
 '@
     )
 
-    & (Join-Path $PSScriptRoot 'Invoke-Migrations.ps1')
+    & (Join-Path $PSScriptRoot 'Invoke-LocalMigrations.ps1')
 
     # Migrations create schema only. Test data must still be absent here.
     Invoke-ContainerRuntime @(

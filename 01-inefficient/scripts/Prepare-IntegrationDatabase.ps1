@@ -39,22 +39,60 @@ Push-Location $projectRoot
 try {
     Invoke-Podman @('compose', 'up', '-d', 'sqlserver')
 
+    $connectionStringBuilder =
+        [System.Data.SqlClient.SqlConnectionStringBuilder]::new()
+    $connectionStringBuilder.set_DataSource(
+        "$($settings.HostName),$($settings.Port)")
+    $connectionStringBuilder.set_InitialCatalog('master')
+    $connectionStringBuilder.set_UserID($settings.UserName)
+    $connectionStringBuilder.set_Password($settings.Password)
+    $connectionStringBuilder.set_Encrypt($true)
+    $connectionStringBuilder.set_TrustServerCertificate($true)
+    $connectionStringBuilder.set_ConnectTimeout(3)
+    $connectionStringBuilder.set_ConnectRetryCount(0)
+    $connectionStringBuilder.set_Pooling($false)
+
+    # EF Core connects from Windows through the published host port. A
+    # container-internal check can pass before that port forwarding is ready.
+    $deadline = [DateTime]::UtcNow.AddSeconds(120)
     $ready = $false
-    for ($attempt = 1; $attempt -le 60; $attempt++) {
-        & podman exec crankdemo-sqlserver `
-            /opt/mssql-tools18/bin/sqlcmd -S localhost `
-            -U $settings.UserName `
-            -P $settings.Password -C -Q 'SELECT 1' *> $null
-        if ($LASTEXITCODE -eq 0) {
+    $lastConnectionError = 'No connection attempt completed.'
+    while ([DateTime]::UtcNow -lt $deadline) {
+        $connection = [System.Data.SqlClient.SqlConnection]::new(
+            $connectionStringBuilder.ConnectionString)
+        try {
+            $connection.Open()
+            $command = $connection.CreateCommand()
+            $command.CommandText = 'SELECT 1'
+            $command.CommandTimeout = 3
+            [void] $command.ExecuteScalar()
             $ready = $true
             break
+        }
+        catch {
+            $lastConnectionError = $_.Exception.Message
+        }
+        finally {
+            $connection.Dispose()
         }
 
         Start-Sleep -Seconds 2
     }
 
     if (-not $ready) {
-        throw 'SQL Server was not reachable within 120 seconds.'
+        $composeStatus = (& podman compose ps 2>&1) -join `
+            [Environment]::NewLine
+        throw (
+            'SQL Server was not reachable from Windows at ' +
+            "$($settings.HostName):$($settings.Port) within 120 seconds." +
+            [Environment]::NewLine +
+            "Last connection error: $lastConnectionError" +
+            [Environment]::NewLine + [Environment]::NewLine +
+            'podman compose ps:' + [Environment]::NewLine +
+            $composeStatus + [Environment]::NewLine +
+            'Inspect SQL Server logs with: ' +
+            'podman compose logs sqlserver'
+        )
     }
 
     Invoke-Podman @(

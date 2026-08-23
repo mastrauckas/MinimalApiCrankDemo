@@ -1,0 +1,28 @@
+imports:
+  - https://raw.githubusercontent.com/dotnet/crank/main/src/Microsoft.Crank.Jobs.Bombardier/bombardier.yml
+
+jobs:
+  bombardier:
+    onConfigure:
+      - >-
+        job.variables.customHeaders = [ 'Authorization: Bearer ' +
+        job.variables.bearerToken ];
+
+scenarios:
+  products:
+    load:
+      job: bombardier
+      variables:
+        serverAddress: localhost
+        serverPort: 8640
+        path: /api/products
+        connections: 32
+        warmup: 5
+        duration: 15
+        bearerToken: ''
+
+profiles:
+  local:
+    load:
+      endpoints:
+        - http://localhost:5010

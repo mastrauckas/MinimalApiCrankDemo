@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RunSettings>
+  <DataCollectionRunSettings>
+    <DataCollectors>
+      <DataCollector friendlyName="Code Coverage">
+        <Configuration>
+          <ExcludeByAttribute>GeneratedCodeAttribute,ExcludeFromCodeCoverageAttribute</ExcludeByAttribute>
+          <ExcludeByFile>**/*.g.cs,**/*.generated.cs</ExcludeByFile>
+          <Exclude>[*.Generated]*,[System.Runtime.CompilerServices]*,[*.Tests]*,[*.UnitTests]*,[*.IntegrationTests]*,[MinimalApiCrankDemo.Api.UnitTests]*,[MinimalApiCrankDemo.Api.IntegrationTests]*</Exclude>
+        </Configuration>
+      </DataCollector>
+    </DataCollectors>
+  </DataCollectionRunSettings>
+</RunSettings>

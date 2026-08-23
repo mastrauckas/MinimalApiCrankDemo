@@ -1,0 +1,15 @@
+@host = http://localhost:8640
+@accessToken = paste-access-token-here
+
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "demo@example.com",
+  "password": "DemoPassword123!"
+}
+
+###
+
+GET {{host}}/api/products
+Authorization: Bearer {{accessToken}}

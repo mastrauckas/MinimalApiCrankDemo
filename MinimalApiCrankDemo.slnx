@@ -1,0 +1,18 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/MinimalApiCrankDemo.Api/MinimalApiCrankDemo.Api.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/MinimalApiCrankDemo.Api.IntegrationTests/MinimalApiCrankDemo.Api.IntegrationTests.csproj" />
+    <Project Path="tests/MinimalApiCrankDemo.Api.UnitTests/MinimalApiCrankDemo.Api.UnitTests.csproj" />
+  </Folder>
+  <Folder Name="/http-files/">
+    <File Path="http-files/demo.http" />
+    <File Path="http-files/health.http" />
+  </Folder>
+  <Folder Name="/infrastructure/">
+    <File Path="docker-compose.yml" />
+    <File Path=".env.example" />
+    <File Path="crank/crank.yml" />
+  </Folder>
+</Solution>

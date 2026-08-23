@@ -43,9 +43,16 @@ public sealed class IntegrationApiFactory : WebApplicationFactory<Program>,
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         var connectionString = ReadConnectionString();
+        var settingsPath = Path.Combine(
+            AppContext.BaseDirectory,
+            "appsettings.IntegrationTests.json");
 
         builder.ConfigureAppConfiguration((_, configuration) =>
-            configuration.AddInMemoryCollection(
+            configuration
+                .AddJsonFile(settingsPath,
+                    optional: false,
+                    reloadOnChange: false)
+                .AddInMemoryCollection(
                 new Dictionary<string, string?>(StringComparer.Ordinal)
                 {
                     ["ConnectionStrings:CrankDemo"] = connectionString

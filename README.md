@@ -4,8 +4,13 @@ A .NET 10 Minimal API lab for measuring intentionally inefficient SQL Server,
 EF Core, and ASP.NET Core Identity access with Crank and Bombardier. SQL Server
 runs under Podman; the API listens on `http://localhost:8640`.
 
-This directory is the self-contained inefficient baseline. It intentionally
-contains no optimized implementation or comparison solution.
+The self-contained inefficient baseline is under `01-inefficient`. It
+intentionally contains no optimized implementation or comparison solution.
+Run the remaining commands from that directory:
+
+```powershell
+Set-Location .\01-inefficient
+```
 
 ## Architecture
 

@@ -25,4 +25,10 @@
     <ProjectReference Include="..\..\src\MinimalApiCrankDemo.Api\MinimalApiCrankDemo.Api.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="appsettings.IntegrationTests.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

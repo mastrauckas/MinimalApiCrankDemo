@@ -3,7 +3,30 @@ namespace MinimalApiCrankDemo.Api.IntegrationTests.Endpoints;
 public sealed class DemoEndpointsTests(
     IntegrationApiFactory factory) : IClassFixture<IntegrationApiFactory>
 {
+    private readonly IntegrationApiFactory _factory = factory;
     private readonly HttpClient _client = factory.CreateClient();
+
+    [Fact]
+    public async Task SeparateSeedCommand_IsIdempotent()
+    {
+        using var scope = _factory.Services.CreateScope();
+        var database = scope.ServiceProvider
+            .GetRequiredService<CrankDemoDbContext>();
+
+        Assert.Equal(1, await database.Users.CountAsync());
+        Assert.Equal(2, await database.Roles.CountAsync());
+        Assert.Equal(2, await database.UserRoles.CountAsync());
+        Assert.Equal(1, await database.UserProfiles.CountAsync());
+        Assert.Equal(1, await database.UserPreferences.CountAsync());
+        Assert.Equal(2, await database.RolePermissions.CountAsync());
+        Assert.Equal(4, await database.RoleCategoryGrants.CountAsync());
+        Assert.Equal(3, await database.ProductCategories.CountAsync());
+        Assert.Equal(12, await database.Products.CountAsync());
+        Assert.Equal(24, await database.ProductInventories.CountAsync());
+        Assert.Equal(24, await database.ProductPrices.CountAsync());
+        Assert.Equal(24, await database.ProductReviews.CountAsync());
+        Assert.Equal(12, await database.RelatedProducts.CountAsync());
+    }
 
     [Fact]
     public async Task Login_WithSeededIdentityCredentials_ReturnsBearerToken()

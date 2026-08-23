@@ -31,8 +31,14 @@ dotnet test .\MinimalApiCrankDemo.slnx
 
 The integration fixture runs `scripts/Prepare-IntegrationTests.ps1` before the
 HTTP tests. It starts `sqlserver` with Podman Compose, waits for SQL Server,
-recreates `CrankDemo`, applies the EF Core migrations, and runs the idempotent
-Identity/catalog seeder. The container stays running for fast repeat runs.
+and recreates `CrankDemo`. It then invokes two separate operations in order:
+
+1. `scripts/Apply-Migrations.ps1` applies schema-only EF Core migrations.
+2. `scripts/Seed-DemoData.ps1` runs the explicit Identity/catalog seed command.
+
+The test setup runs the seed command a second time, and an integration test
+asserts that users, roles, products, permissions, and related rows were not
+duplicated. The container stays running for fast repeat runs.
 
 The seeded demo Identity account is:
 
@@ -46,9 +52,47 @@ source.
 Database recreation is defined under `seed/`; schema is defined by the EF Core
 migrations in `src/MinimalApiCrankDemo.Api/Data/Migrations`.
 
+## Migrate and seed are separate commands
+
+Normal API startup never applies migrations and never seeds data.
+
+To apply pending schema migrations only, run:
+
+```powershell
+.\scripts\Apply-Migrations.ps1
+```
+
+This wrapper restores the repo-local `dotnet-ef` tool and runs the equivalent
+of the project's migration command:
+
+```powershell
+dotnet tool run dotnet-ef database update `
+  --project .\src\MinimalApiCrankDemo.Api\MinimalApiCrankDemo.Api.csproj `
+  --startup-project .\src\MinimalApiCrankDemo.Api\MinimalApiCrankDemo.Api.csproj
+```
+
+That command changes schema only. It does not invoke the demo seeder.
+
+After the database is migrated, seed the development/demo rows explicitly:
+
+```powershell
+.\scripts\Seed-DemoData.ps1
+```
+
+The wrapper loads the ignored `.env` connection settings and invokes:
+
+```powershell
+dotnet run --project .\src\MinimalApiCrankDemo.Api `
+  -- --seed-demo-data
+```
+
+The seed command refuses to run while migrations are pending. It is
+idempotent, so repeated runs preserve one demo user, the expected roles and
+permissions, and one copy of every catalog and related row.
+
 ## Start and call the API
 
-Run the tests once to start and seed SQL Server, then:
+Recreate, migrate, and seed through the tests once, then start the API:
 
 ```powershell
 .\scripts\Start-Api.ps1

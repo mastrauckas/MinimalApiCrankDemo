@@ -65,15 +65,25 @@ try {
         '-d', 'master', '-i', '/seed/001-recreate-database.sql'
     )
 
-    $env:ConnectionStrings__CrankDemo =
-        "Server=localhost,14333;Database=CrankDemo;User ID=sa;" +
-        "Password=$password;TrustServerCertificate=True"
-    dotnet run --project `
-        (Join-Path $projectRoot 'src/MinimalApiCrankDemo.Api') `
-        --no-launch-profile -- --initialize-database
-    if ($LASTEXITCODE -ne 0) {
-        throw "EF migration and Identity seed failed with exit code $LASTEXITCODE."
-    }
+    & (Join-Path $PSScriptRoot 'Apply-Migrations.ps1')
+
+    # Verify that the migration-only command created schema but inserted no
+    # Identity demo user before the explicit seed operation runs.
+    $schemaOnlyCheck =
+        'IF EXISTS (SELECT 1 FROM dbo.AspNetUsers) ' +
+        "THROW 51000, 'Migration inserted demo data.', 1;"
+    Invoke-Podman @(
+        'exec', 'crankdemo-sqlserver',
+        '/opt/mssql-tools18/bin/sqlcmd', '-S', 'localhost',
+        '-U', 'sa', '-P', $password, '-C', '-b', '-d', 'CrankDemo',
+        '-Q', $schemaOnlyCheck
+    )
+
+    & (Join-Path $PSScriptRoot 'Seed-DemoData.ps1')
+
+    # Run the explicit seed command twice. Integration assertions verify that
+    # this second pass does not duplicate any demo rows.
+    & (Join-Path $PSScriptRoot 'Seed-DemoData.ps1')
 }
 finally {
     Pop-Location

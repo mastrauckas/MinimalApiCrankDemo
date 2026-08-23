@@ -3,9 +3,9 @@ builder.ConfigureBuilder();
 
 var app = builder.Build();
 
-if (args.Contains("--initialize-database", StringComparer.Ordinal))
+if (args.Contains("--seed-demo-data", StringComparer.Ordinal))
 {
-    await app.InitializeDatabaseAsync();
+    await app.SeedDemoDataAsync();
     await app.DisposeAsync();
     return;
 }

@@ -51,8 +51,8 @@ crank-agent --help
 The first tool provides the `crank` command. The second provides the local
 `crank-agent` process, which executes benchmark jobs.
 
-Manual installation is optional. `crank\Run-Crank.ps1` already installs or
-updates both tools before it runs the benchmark.
+Manual installation is optional. The benchmark entry points install or update
+both tools through the lower-level `crank\Run-Crank.ps1` script.
 
 ## Container Runtime and Integration Tests
 
@@ -255,23 +255,58 @@ Invoke-RestMethod `
 
 ## Run authenticated Crank
 
-Run:
+For a complete Podman benchmark run:
 
 ```powershell
-.\crank\Run-Crank.ps1
+.\scripts\Invoke-BenchmarkSetupAndCrank.ps1
 ```
 
-The launcher:
+The script creates a dedicated benchmark SQL Server container and volume. It
+uses database `CrankDemoBenchmark` through `127.0.0.1:14334`, runs migrations
+and benchmark seeding, starts the API on port 8640, logs in through Identity,
+and runs the existing products scenario. It stops only the API afterward and
+leaves SQL Server running for inspection.
 
-1. verifies Podman is running and starts SQL Server;
-2. runs Database-project migrations;
-3. runs `Seed-BenchmarkDatabase.ps1`;
-4. starts the API if it is not already running;
-5. logs in through `POST /api/auth/login`;
-6. passes the returned bearer token to the `products` scenario; and
-7. runs Bombardier against authenticated `GET /api/products`.
+To remove the benchmark container and volume after the run:
 
-The scenario remains in `crank/crank.yml`; the token is never written to disk.
+```powershell
+.\scripts\Invoke-BenchmarkSetupAndCrank.ps1 -Cleanup
+```
+
+To remove an existing benchmark database without running a benchmark:
+
+```powershell
+.\scripts\Remove-BenchmarkDatabase.ps1
+```
+
+For Docker, add `-ContainerRuntime Docker`.
+
+Select Docker explicitly when needed:
+
+```powershell
+.\scripts\Invoke-BenchmarkSetupAndCrank.ps1 `
+  -ContainerRuntime Docker
+```
+
+After one complete setup run has retained the benchmark container and seeded
+database, rerun only the authenticated load test:
+
+```powershell
+.\scripts\Invoke-CrankOnly.ps1
+```
+
+If the API is not already running, this command privately reads the disposable
+SQL password from the existing benchmark container, starts the API, runs Crank,
+and stops the API afterward. It does not recreate the container, migrate the
+database, or seed data. If the API is already running, it uses that instance.
+
+Both entry points save timestamped JSON results under `artifacts/crank/` and
+print the exact result path. The scenario remains in `crank/crank.yml`; bearer
+tokens and SQL Server passwords are never written to the result file or logs.
+
+`crank/Run-Crank.ps1` is now the lower-level scenario runner. It expects a
+bearer token and result path, so use the two entry points above for normal
+benchmark work.
 
 ## Intentional optimization targets
 

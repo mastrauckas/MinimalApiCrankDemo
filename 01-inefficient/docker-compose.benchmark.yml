@@ -1,0 +1,32 @@
+name: minimal-api-crank-demo-benchmark
+
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: crankdemo-benchmark-sqlserver
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: Developer
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD}
+      SQLSERVER_DATABASE: CrankDemoBenchmark
+      SQLSERVER_USER: sa
+    ports:
+      - "14334:1433"
+    volumes:
+      - crankdemo-benchmark-sqlserver-data:/var/opt/mssql
+      - ./seed:/seed:ro
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          SQLCMDPASSWORD="$${MSSQL_SA_PASSWORD}"
+          /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa
+          -C -Q "SELECT 1" || exit 1
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 20s
+
+volumes:
+  crankdemo-benchmark-sqlserver-data:
+    name: crankdemo-benchmark-sqlserver-data

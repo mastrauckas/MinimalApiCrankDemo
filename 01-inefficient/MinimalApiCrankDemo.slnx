@@ -20,6 +20,7 @@
   </Folder>
   <Folder Name="/infrastructure/">
     <File Path="docker-compose.yml" />
+    <File Path="docker-compose.benchmark.yml" />
     <File Path="docker-compose.integration-tests.yml" />
     <File Path="crank/crank.yml" />
   </Folder>

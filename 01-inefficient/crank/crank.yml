@@ -3,26 +3,32 @@ imports:
 
 jobs:
   bombardier:
-    onConfigure:
-      - >-
-        job.variables.customHeaders = [ 'Authorization: Bearer ' +
-        job.variables.bearerToken ];
+    # A framework-dependent job is launched as `dotnet <published dll>`, avoiding
+    # the generated apphost executable that Windows Application Control blocks.
+    selfContained: false
+    # Run the load generator on the same major .NET version as the demo API.
+    framework: net10.0
+    channel: current
 
 scenarios:
   products:
     load:
       job: bombardier
       variables:
+        customHeaders:
+          - 'Authorization: Bearer {{bearerToken}}'
         serverAddress: localhost
         serverPort: 8640
         path: /api/products
         connections: 32
         warmup: 5
         duration: 15
+        timeout: 30
         bearerToken: ''
 
 profiles:
   local:
-    load:
-      endpoints:
-        - http://localhost:5010
+    jobs:
+      load:
+        endpoints:
+          - http://localhost:5010

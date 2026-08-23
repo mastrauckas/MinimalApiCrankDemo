@@ -1,11 +1,12 @@
 # Build output
 bin/
 obj/
+artifacts/
 
 # Logs
 logs/
 
-# Test results & coverage
+# Test results and coverage
 TestResults/
 coverage/
 *.coverage
@@ -17,18 +18,14 @@ coverage/
 project.lock.json
 packages/
 
-# Rider
+# IDEs
 .idea/
-
-# Visual Studio
 .vs/
+.vscode/
 *.user
 *.suo
 *.userprefs
 *.DotSettings.user
-
-# VS Code
-.vscode/
 
 # OS
 .DS_Store

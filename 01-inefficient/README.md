@@ -1,8 +1,11 @@
-# MinimalApiCrankDemo
+# MinimalApiCrankDemo: Inefficient Baseline
 
 A .NET 10 Minimal API lab for measuring intentionally inefficient SQL Server,
 EF Core, and ASP.NET Core Identity access with Crank and Bombardier. SQL Server
 runs under Podman; the API listens on `http://localhost:8640`.
+
+This directory is the self-contained inefficient baseline. It intentionally
+contains no optimized implementation or comparison solution.
 
 ## Architecture
 

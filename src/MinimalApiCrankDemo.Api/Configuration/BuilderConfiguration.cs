@@ -16,6 +16,7 @@ internal static class BuilderConfigurationExtensions
             builder.RegisterForwardedHeaders();
             builder.RegisterLogging();
             builder.RegisterValidation();
+            builder.RegisterServices();
         }
 
         public void RegisterOpenApi()
@@ -263,8 +264,15 @@ internal static class BuilderConfigurationExtensions
                     "ConnectionStrings:CrankDemo is required. " +
                     "Use scripts/Start-Api.ps1.");
 
-            builder.Services.AddDbContext<CrankDemoDbContext>(options =>
-                options.UseSqlServer(connectionString));
+            builder.Services.AddCrankDemoDatabase(connectionString);
+        }
+
+        public void RegisterServices()
+        {
+            builder.Services.AddScoped<ILoginRepository, LoginRepository>();
+            builder.Services.AddScoped<IProductRepository, ProductRepository>();
+            builder.Services.AddScoped<ILoginService, LoginService>();
+            builder.Services.AddScoped<IProductService, ProductService>();
         }
     }
 }

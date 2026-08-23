@@ -22,7 +22,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\MinimalApiCrankDemo.Api\MinimalApiCrankDemo.Api.csproj" />
+    <ProjectReference Include="..\..\src\MinimalApiCrankDemo.Application\MinimalApiCrankDemo.Application.csproj" />
   </ItemGroup>
 
 </Project>

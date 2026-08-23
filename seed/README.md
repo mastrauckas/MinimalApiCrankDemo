@@ -1,11 +1,13 @@
-# Database initialization
+# Database setup SQL
 
-`001-recreate-database.sql` removes and recreates the disposable database.
-Integration and benchmark setup then apply the EF Core migrations in
-`src/MinimalApiCrankDemo.Api/Data/Migrations`. The test-owned idempotent
-Identity and catalog seeder is under
-`tests/MinimalApiCrankDemo.Api.IntegrationTests/Seeding` and is not compiled
-into the API project.
+`001-recreate-database.sql` removes and recreates the disposable `CrankDemo`
+database. It creates no schema and inserts no data.
 
-The SQL script only recreates the database. It does not create application
-tables or insert demo rows.
+The Database project owns schema-only EF Core migrations. After migrations,
+the PowerShell seed commands run the idempotent SQLCMD files under:
+
+- `integration/001-seed-data.sql`
+- `benchmark/001-seed-data.sql`
+
+These SQL files are test/benchmark tooling and are not compiled into any
+application project.

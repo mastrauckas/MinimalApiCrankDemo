@@ -24,20 +24,16 @@ if ($LASTEXITCODE -ne 0) {
 if (-not (Test-Path -LiteralPath $envPath)) {
     $generatedPassword = "Crank-$([Guid]::NewGuid().ToString('N'))-Aa1!"
     Set-Content -LiteralPath $envPath -Encoding utf8 -Value @(
-        "MSSQL_SA_PASSWORD=$generatedPassword"
+        "MSSQL_SA_PASSWORD=$generatedPassword",
+        'SQLSERVER_HOST=localhost',
+        'SQLSERVER_PORT=14333',
+        'SQLSERVER_DATABASE=CrankDemo',
+        'SQLSERVER_USER=sa'
     )
 }
 
-$passwordLine = Get-Content -LiteralPath $envPath |
-    Where-Object { $_ -match '^MSSQL_SA_PASSWORD=' } |
-    Select-Object -First 1
-if (-not $passwordLine) {
-    throw '.env must define MSSQL_SA_PASSWORD.'
-}
-$password = $passwordLine.Substring('MSSQL_SA_PASSWORD='.Length)
-if ([string]::IsNullOrWhiteSpace($password)) {
-    throw 'MSSQL_SA_PASSWORD cannot be empty.'
-}
+$settings = & (Join-Path $PSScriptRoot 'Read-DatabaseSettings.ps1') `
+    -EnvPath $envPath
 
 Push-Location $projectRoot
 try {
@@ -46,8 +42,9 @@ try {
     $ready = $false
     for ($attempt = 1; $attempt -le 60; $attempt++) {
         & podman exec crankdemo-sqlserver `
-            /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa `
-            -P $password -C -Q 'SELECT 1' *> $null
+            /opt/mssql-tools18/bin/sqlcmd -S localhost `
+            -U $settings.UserName `
+            -P $settings.Password -C -Q 'SELECT 1' *> $null
         if ($LASTEXITCODE -eq 0) {
             $ready = $true
             break
@@ -63,11 +60,11 @@ try {
     Invoke-Podman @(
         'exec', 'crankdemo-sqlserver',
         '/opt/mssql-tools18/bin/sqlcmd', '-S', 'localhost',
-        '-U', 'sa', '-P', $password, '-C', '-b',
+        '-U', $settings.UserName, '-P', $settings.Password, '-C', '-b',
         '-d', 'master', '-i', '/seed/001-recreate-database.sql'
     )
 
-    & (Join-Path $PSScriptRoot 'Apply-Migrations.ps1')
+    & (Join-Path $PSScriptRoot 'Invoke-Migrations.ps1')
 
     # Verify that the migration-only command created schema but inserted no
     # Identity demo user before the explicit seed operation runs.
@@ -77,9 +74,15 @@ try {
     Invoke-Podman @(
         'exec', 'crankdemo-sqlserver',
         '/opt/mssql-tools18/bin/sqlcmd', '-S', 'localhost',
-        '-U', 'sa', '-P', $password, '-C', '-b', '-d', 'CrankDemo',
+        '-U', $settings.UserName, '-P', $settings.Password,
+        '-C', '-b', '-d', $settings.Database,
         '-Q', $schemaOnlyCheck
     )
+
+    & (Join-Path $PSScriptRoot 'Seed-IntegrationDatabase.ps1')
+
+    # The second pass proves the SQL seed remains idempotent.
+    & (Join-Path $PSScriptRoot 'Seed-IntegrationDatabase.ps1')
 }
 finally {
     Pop-Location

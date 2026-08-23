@@ -2,11 +2,6 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" />
     <PackageReference Include="Microsoft.OpenApi" />
     <PackageReference Include="Scalar.AspNetCore" />
@@ -15,6 +10,12 @@
     <PackageReference Include="Serilog.Enrichers.Thread" />
     <PackageReference Include="Serilog.Sinks.Console" />
     <PackageReference Include="Serilog.Sinks.File" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MinimalApiCrankDemo.Application\MinimalApiCrankDemo.Application.csproj" />
+    <ProjectReference Include="..\MinimalApiCrankDemo.Database\MinimalApiCrankDemo.Database.csproj" />
+    <ProjectReference Include="..\MinimalApiCrankDemo.Infrastructure\MinimalApiCrankDemo.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

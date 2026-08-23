@@ -15,6 +15,21 @@ $env:ConnectionStrings__CrankDemo =
     "Database=$($settings.Database);User ID=$($settings.UserName);" +
     "Password=$($settings.Password);TrustServerCertificate=True"
 
-dotnet run --project `
-    (Join-Path $projectRoot 'src/MinimalApiCrankDemo.Api') `
-    --launch-profile http
+Push-Location $projectRoot
+try {
+    dotnet tool restore
+    if ($LASTEXITCODE -ne 0) {
+        throw "dotnet tool restore failed with exit code $LASTEXITCODE."
+    }
+
+    dotnet tool run dotnet-ef database update --project `
+        '.\src\MinimalApiCrankDemo.Database\MinimalApiCrankDemo.Database.csproj' `
+        --startup-project `
+        '.\src\MinimalApiCrankDemo.Database\MinimalApiCrankDemo.Database.csproj'
+    if ($LASTEXITCODE -ne 0) {
+        throw "EF migration failed with exit code $LASTEXITCODE."
+    }
+}
+finally {
+    Pop-Location
+}

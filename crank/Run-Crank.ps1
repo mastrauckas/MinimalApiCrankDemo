@@ -3,6 +3,7 @@ param()
 
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
+$envPath = Join-Path $projectRoot '.env'
 
 function Install-OrUpdateTool {
     param(
@@ -23,30 +24,103 @@ function Install-OrUpdateTool {
     }
 }
 
+& podman info *> $null
+if ($LASTEXITCODE -ne 0) {
+    throw "Podman's machine is stopped. Run: podman machine start"
+}
+
+if (-not (Test-Path -LiteralPath $envPath)) {
+    $generatedPassword = "Crank-$([Guid]::NewGuid().ToString('N'))-Aa1!"
+    Set-Content -LiteralPath $envPath -Encoding utf8 -Value @(
+        "MSSQL_SA_PASSWORD=$generatedPassword",
+        'SQLSERVER_HOST=localhost',
+        'SQLSERVER_PORT=14333',
+        'SQLSERVER_DATABASE=CrankDemo',
+        'SQLSERVER_USER=sa'
+    )
+}
+
+Push-Location $projectRoot
+try {
+    & podman compose up -d sqlserver
+    if ($LASTEXITCODE -ne 0) {
+        throw "podman compose up failed with exit code $LASTEXITCODE."
+    }
+
+    $settings = & (Join-Path $projectRoot `
+            'scripts/Read-DatabaseSettings.ps1') `
+        -EnvPath $envPath
+
+    $ready = $false
+    for ($attempt = 1; $attempt -le 60; $attempt++) {
+        & podman exec crankdemo-sqlserver `
+            /opt/mssql-tools18/bin/sqlcmd -S localhost `
+            -U $settings.UserName `
+            -P $settings.Password -C -Q 'SELECT 1' *> $null
+        if ($LASTEXITCODE -eq 0) {
+            $ready = $true
+            break
+        }
+
+        Start-Sleep -Seconds 2
+    }
+    if (-not $ready) {
+        throw 'SQL Server was not reachable within 120 seconds.'
+    }
+
+    & (Join-Path $projectRoot 'scripts/Invoke-Migrations.ps1')
+    & (Join-Path $projectRoot 'scripts/Seed-BenchmarkDatabase.ps1')
+}
+finally {
+    Pop-Location
+}
+
 Install-OrUpdateTool 'Microsoft.Crank.Controller' 'crank'
 Install-OrUpdateTool 'Microsoft.Crank.Agent' 'crank-agent'
 
-& (Join-Path $projectRoot 'scripts/Prepare-BenchmarkDatabase.ps1')
-
-$loginBody = @{
-    email = 'demo@example.com'
-    password = 'DemoPassword123!'
-} | ConvertTo-Json
+$apiProcess = $null
+$agentProcess = $null
 try {
+    try {
+        Invoke-RestMethod -Uri 'http://localhost:8640/health/live' `
+            -TimeoutSec 2 | Out-Null
+    }
+    catch {
+        $apiProcess = Start-Process -FilePath 'pwsh' `
+            -ArgumentList '-NoProfile', '-File',
+                (Join-Path $projectRoot 'scripts/Start-Api.ps1') `
+            -WindowStyle Hidden -PassThru
+
+        $apiReady = $false
+        for ($attempt = 1; $attempt -le 30; $attempt++) {
+            try {
+                Invoke-RestMethod `
+                    -Uri 'http://localhost:8640/health/live' `
+                    -TimeoutSec 2 | Out-Null
+                $apiReady = $true
+                break
+            }
+            catch {
+                Start-Sleep -Seconds 1
+            }
+        }
+        if (-not $apiReady) {
+            throw 'The API was not reachable within 30 seconds.'
+        }
+    }
+
+    $loginBody = @{
+        email = 'demo@example.com'
+        password = 'DemoPassword123!'
+    } | ConvertTo-Json
     $loginResponse = Invoke-RestMethod `
         -Uri 'http://localhost:8640/api/auth/login' `
         -Method Post -ContentType 'application/json' -Body $loginBody
-}
-catch {
-    throw 'Could not obtain an Identity bearer token. Start the API first.'
-}
-$bearerToken = $loginResponse.accessToken
-if ([string]::IsNullOrWhiteSpace($bearerToken)) {
-    throw 'The Identity login response did not contain an access token.'
-}
+    $bearerToken = $loginResponse.accessToken
+    if ([string]::IsNullOrWhiteSpace($bearerToken)) {
+        throw 'The Identity login response did not contain an access token.'
+    }
 
-$agentProcess = $null
-try {
     try {
         Invoke-WebRequest -Uri 'http://localhost:5010' `
             -Method Head -TimeoutSec 2 | Out-Null
@@ -68,5 +142,8 @@ try {
 finally {
     if ($agentProcess) {
         Stop-Process -Id $agentProcess.Id -ErrorAction SilentlyContinue
+    }
+    if ($apiProcess) {
+        Stop-Process -Id $apiProcess.Id -ErrorAction SilentlyContinue
     }
 }

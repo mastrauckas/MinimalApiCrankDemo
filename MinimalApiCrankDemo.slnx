@@ -1,13 +1,13 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/MinimalApiCrankDemo.Api/MinimalApiCrankDemo.Api.csproj" />
+    <Project Path="src/MinimalApiCrankDemo.Application/MinimalApiCrankDemo.Application.csproj" />
+    <Project Path="src/MinimalApiCrankDemo.Database/MinimalApiCrankDemo.Database.csproj" />
+    <Project Path="src/MinimalApiCrankDemo.Infrastructure/MinimalApiCrankDemo.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/MinimalApiCrankDemo.Api.IntegrationTests/MinimalApiCrankDemo.Api.IntegrationTests.csproj" />
     <Project Path="tests/MinimalApiCrankDemo.Api.UnitTests/MinimalApiCrankDemo.Api.UnitTests.csproj" />
-  </Folder>
-  <Folder Name="/tools/">
-    <Project Path="tools/MinimalApiCrankDemo.BenchmarkSetup/MinimalApiCrankDemo.BenchmarkSetup.csproj" />
   </Folder>
   <Folder Name="/http-files/">
     <File Path="http-files/demo.http" />

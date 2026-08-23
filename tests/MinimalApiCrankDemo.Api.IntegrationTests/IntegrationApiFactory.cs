@@ -36,19 +36,13 @@ public sealed class IntegrationApiFactory : WebApplicationFactory<Program>,
                 $"Integration database setup failed.{Environment.NewLine}" +
                 $"{output}{Environment.NewLine}{error}");
         }
-
-        await DemoDataSeeder.SeedAsync(Services);
-        await DemoDataSeeder.SeedAsync(Services);
     }
 
     Task IAsyncLifetime.DisposeAsync() => Task.CompletedTask;
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
-        var password = ReadPassword();
-        var connectionString =
-            "Server=localhost,14333;Database=CrankDemo;User ID=sa;" +
-            $"Password={password};TrustServerCertificate=True";
+        var connectionString = ReadConnectionString();
 
         builder.ConfigureAppConfiguration((_, configuration) =>
             configuration.AddInMemoryCollection(
@@ -58,17 +52,22 @@ public sealed class IntegrationApiFactory : WebApplicationFactory<Program>,
                 }));
     }
 
-    private string ReadPassword()
+    private string ReadConnectionString()
     {
         var envPath = Path.Combine(_projectRoot, ".env");
-        var passwordLine = File.ReadLines(envPath)
-            .FirstOrDefault(line =>
-                line.StartsWith("MSSQL_SA_PASSWORD=",
-                    StringComparison.Ordinal));
-        return passwordLine is null
-            ? throw new InvalidOperationException(
-                ".env must define MSSQL_SA_PASSWORD.")
-            : passwordLine["MSSQL_SA_PASSWORD=".Length..];
+        var values = File.ReadLines(envPath)
+            .Where(line => !line.StartsWith('#') &&
+                line.Contains('=', StringComparison.Ordinal))
+            .Select(line => line.Split('=', 2))
+            .ToDictionary(parts => parts[0],
+                parts => parts[1],
+                StringComparer.Ordinal);
+        return $"Server={values["SQLSERVER_HOST"]}," +
+            $"{values["SQLSERVER_PORT"]};" +
+            $"Database={values["SQLSERVER_DATABASE"]};" +
+            $"User ID={values["SQLSERVER_USER"]};" +
+            $"Password={values["MSSQL_SA_PASSWORD"]};" +
+            "TrustServerCertificate=True";
     }
 
     private static string FindProjectRoot()

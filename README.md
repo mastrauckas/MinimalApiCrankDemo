@@ -2,7 +2,7 @@
 
 A .NET 10 Minimal API lab for measuring intentionally inefficient SQL Server,
 EF Core, and ASP.NET Core Identity access with Crank and Bombardier. SQL Server
-runs under Podman; the API listens on `http://localhost:8640`.
+runs in a container; the API listens on `http://localhost:8640`.
 
 The self-contained inefficient baseline is under `01-inefficient`. It
 intentionally contains no optimized implementation or comparison solution.
@@ -27,44 +27,94 @@ Set-Location .\01-inefficient
 - Integration and benchmark SQL data lives under `seed/`, outside every
   application project.
 
-## Prerequisites and Podman
+## Container Runtime and Integration Tests
 
 - .NET 10 SDK
-- Podman Desktop or Podman CLI with Compose support
 - PowerShell 7 (`pwsh`)
+- Either Podman with Compose support or Docker Desktop/Docker Engine
 
-Start the Podman machine:
-
-```powershell
-podman machine start
-```
+Choose **either Podman or Docker** for this demo. Do not run both at the same
+time: both Compose projects use the same SQL Server port and container name.
 
 Copy `.env.example` to the ignored `.env` and replace the SQL Server SA
-password. Integration setup creates a random local `.env` if it is missing.
-No production secret or plaintext application password is stored in
-source-controlled configuration.
+password before starting Compose. Integration setup creates a random local
+`.env` if it is missing. No production secret or plaintext application
+password is stored in source-controlled configuration.
 
-## Integration tests
+### Podman on Windows
 
-Press **Run Tests** in the IDE, or run:
+Run these commands from `01-inefficient`:
 
 ```powershell
+podman --version
+podman machine start
+podman info
+podman compose up -d sqlserver
+podman compose ps
+podman compose logs sqlserver
 dotnet test .\MinimalApiCrankDemo.slnx
 ```
 
-The integration fixture invokes `scripts/Prepare-IntegrationDatabase.ps1`,
-which performs these operations in order:
+`podman --version` confirms that the Podman CLI is installed. On Windows,
+`podman machine start` starts the Linux virtual machine used by Podman.
+`podman info` confirms that the CLI can reach that machine. The Compose
+commands start SQL Server, show its status, and display its logs. The final
+command runs all tests.
 
-1. starts the Podman SQL Server container;
-2. waits until SQL Server is reachable;
-3. recreates `CrankDemo`;
-4. runs `scripts/Invoke-Migrations.ps1`;
-5. verifies migrations inserted no Identity rows; and
-6. runs `scripts/Seed-IntegrationDatabase.ps1` twice.
+### Docker
 
-The second seed pass and integration row-count assertions verify idempotence.
-The fixture then starts the API test host and exercises authentication and the
-products endpoint. It leaves SQL Server running for fast repeat runs.
+Run these commands from `01-inefficient`:
+
+```powershell
+docker version
+docker compose up -d sqlserver
+docker compose ps
+docker compose logs sqlserver
+dotnet test .\MinimalApiCrankDemo.slnx
+```
+
+`docker version` confirms that Docker Desktop or Docker Engine is running.
+The Compose commands start SQL Server, show its status, and display its logs.
+The final command runs all tests.
+
+The current automated integration fixture invokes the Podman-specific
+`scripts/Prepare-IntegrationDatabase.ps1`. The Docker commands above are the
+equivalent container workflow, but a Docker-only test run will require runtime
+selection support in that script. This README-only change does not alter the
+existing test behavior.
+
+You can also press **Run Tests** in the IDE. The integration-test lifecycle is:
+
+1. Start SQL Server if needed.
+2. Wait for SQL Server to accept connections.
+3. Recreate the disposable `CrankDemo` database.
+4. Run `scripts/Invoke-Migrations.ps1`.
+5. Verify migrations inserted no Identity or application seed data.
+6. Run `scripts/Seed-IntegrationDatabase.ps1` twice to verify idempotency.
+7. Start the API test host.
+8. Run the integration tests.
+
+The SQL Server container remains running after the tests, which makes repeated
+test runs faster.
+
+### Reset the disposable database
+
+Use the command for your chosen runtime.
+
+Podman:
+
+```powershell
+podman compose down -v
+```
+
+Docker:
+
+```powershell
+docker compose down -v
+```
+
+`down -v` removes the SQL Server container and its named volume. The next run
+therefore starts with a completely clean database.
 
 The test and benchmark Identity account is:
 
@@ -158,13 +208,3 @@ product, category, inventory, prices, reviews, and related products.
 Comments in `MinimalApiCrankDemo.Infrastructure/Repositories` label these
 optimization targets. Possible experiments include composed projections,
 joins, eager or batched loading, compiled queries, and caching.
-
-## Reset everything
-
-Remove the SQL Server container and disposable named volume:
-
-```powershell
-.\scripts\Reset-Database.ps1
-```
-
-The script runs `podman compose down -v`.

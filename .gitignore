@@ -30,6 +30,3 @@ packages/
 # OS
 .DS_Store
 Thumbs.db
-
-# Generated local-only database credentials
-.env

@@ -3,7 +3,6 @@ param()
 
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
-$envPath = Join-Path $projectRoot '.env'
 
 function Install-OrUpdateTool {
     param(
@@ -24,21 +23,48 @@ function Install-OrUpdateTool {
     }
 }
 
+function Get-ExistingDatabasePassword {
+    $containerEnvironment = & podman inspect `
+        --format '{{range .Config.Env}}{{println .}}{{end}}' `
+        crankdemo-sqlserver 2> $null
+    if ($LASTEXITCODE -ne 0) {
+        return $null
+    }
+
+    $passwordEntry = $containerEnvironment |
+        Where-Object { $_ -like 'MSSQL_SA_PASSWORD=*' } |
+        Select-Object -First 1
+    if ([string]::IsNullOrWhiteSpace($passwordEntry)) {
+        return $null
+    }
+
+    return $passwordEntry.Substring('MSSQL_SA_PASSWORD='.Length)
+}
+
 & podman info *> $null
 if ($LASTEXITCODE -ne 0) {
     throw "Podman's machine is stopped. Run: podman machine start"
 }
 
-if (-not (Test-Path -LiteralPath $envPath)) {
-    $generatedPassword = "Crank-$([Guid]::NewGuid().ToString('N'))-Aa1!"
-    Set-Content -LiteralPath $envPath -Encoding utf8 -Value @(
-        "MSSQL_SA_PASSWORD=$generatedPassword",
-        'SQLSERVER_HOST=localhost',
-        'SQLSERVER_PORT=14333',
-        'SQLSERVER_DATABASE=CrankDemo',
-        'SQLSERVER_USER=sa'
-    )
+$databasePassword = Get-ExistingDatabasePassword
+if ([string]::IsNullOrWhiteSpace($databasePassword)) {
+    $databasePassword =
+        "Crank-$([Guid]::NewGuid().ToString('N'))-Aa1!"
+
+    & podman volume exists crankdemo-sqlserver-data
+    if ($LASTEXITCODE -eq 0) {
+        & podman volume rm crankdemo-sqlserver-data *> $null
+        if ($LASTEXITCODE -ne 0) {
+            throw 'Could not remove the orphaned benchmark volume.'
+        }
+    }
 }
+$env:CRANK_DEMO_CONTAINER_RUNTIME = 'podman'
+$env:MSSQL_SA_PASSWORD = $databasePassword
+$env:SQLSERVER_HOST = 'localhost'
+$env:SQLSERVER_PORT = '14333'
+$env:SQLSERVER_DATABASE = 'CrankDemo'
+$env:SQLSERVER_USER = 'sa'
 
 Push-Location $projectRoot
 try {
@@ -47,16 +73,12 @@ try {
         throw "podman compose up failed with exit code $LASTEXITCODE."
     }
 
-    $settings = & (Join-Path $projectRoot `
-            'scripts/Read-DatabaseSettings.ps1') `
-        -EnvPath $envPath
-
     $ready = $false
     for ($attempt = 1; $attempt -le 60; $attempt++) {
-        & podman exec crankdemo-sqlserver `
-            /opt/mssql-tools18/bin/sqlcmd -S localhost `
-            -U $settings.UserName `
-            -P $settings.Password -C -Q 'SELECT 1' *> $null
+        & podman exec crankdemo-sqlserver /bin/bash -c @'
+SQLCMDPASSWORD="$MSSQL_SA_PASSWORD" /opt/mssql-tools18/bin/sqlcmd \
+  -S localhost -U "$SQLSERVER_USER" -C -Q "SELECT 1"
+'@ *> $null
         if ($LASTEXITCODE -eq 0) {
             $ready = $true
             break

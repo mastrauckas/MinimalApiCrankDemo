@@ -3,46 +3,57 @@ namespace MinimalApiCrankDemo.Api.IntegrationTests;
 public sealed class IntegrationApiFactory : WebApplicationFactory<Program>,
     IAsyncLifetime
 {
+    private const string DatabaseName = "CrankDemo";
+    private const string DatabaseUser = "sa";
+    private const string HostName = "127.0.0.1";
+    private const string HostPort = "14333";
+
+    private readonly string _containerRuntime = GetContainerRuntime();
+    private readonly string _password = GeneratePassword();
     private readonly string _projectRoot = FindProjectRoot();
 
     public async Task InitializeAsync()
     {
-        var scriptPath = Path.Combine(
-            _projectRoot,
-            "scripts",
-            "Prepare-IntegrationDatabase.ps1");
-        var startInfo = new ProcessStartInfo(
-            "pwsh",
-            $"-NoProfile -File \"{scriptPath}\"")
+        try
         {
-            WorkingDirectory = _projectRoot,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false
-        };
-
-        using var process = Process.Start(startInfo) ??
-            throw new InvalidOperationException(
-                "Could not start the integration database setup script.");
-        var standardOutput = process.StandardOutput.ReadToEndAsync();
-        var standardError = process.StandardError.ReadToEndAsync();
-        await process.WaitForExitAsync();
-        var output = await standardOutput;
-        var error = await standardError;
-
-        if (process.ExitCode != 0)
+            await RunDatabaseScriptAsync(
+                "Prepare-IntegrationDatabase.ps1");
+        }
+        catch (Exception setupException)
         {
-            throw new InvalidOperationException(
-                $"Integration database setup failed.{Environment.NewLine}" +
-                $"{output}{Environment.NewLine}{error}");
+            try
+            {
+                await RunDatabaseScriptAsync(
+                    "Remove-IntegrationDatabase.ps1");
+            }
+            catch (Exception cleanupException)
+            {
+                throw new AggregateException(
+                    "Integration setup and cleanup both failed.",
+                    setupException,
+                    cleanupException);
+            }
+
+            throw;
         }
     }
 
-    Task IAsyncLifetime.DisposeAsync() => Task.CompletedTask;
+    async Task IAsyncLifetime.DisposeAsync()
+    {
+        try
+        {
+            await base.DisposeAsync();
+        }
+        finally
+        {
+            await RunDatabaseScriptAsync(
+                "Remove-IntegrationDatabase.ps1");
+        }
+    }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
-        var connectionString = ReadConnectionString();
+        var connectionString = CreateConnectionString();
         var settingsPath = Path.Combine(
             AppContext.BaseDirectory,
             "appsettings.IntegrationTests.json");
@@ -55,26 +66,16 @@ public sealed class IntegrationApiFactory : WebApplicationFactory<Program>,
                 .AddInMemoryCollection(
                 new Dictionary<string, string?>(StringComparer.Ordinal)
                 {
-                    ["ConnectionStrings:CrankDemo"] = connectionString
+                    ["ConnectionStrings:CrankDemo"] =
+                        connectionString
                 }));
-    }
 
-    private string ReadConnectionString()
-    {
-        var envPath = Path.Combine(_projectRoot, ".env");
-        var values = File.ReadLines(envPath)
-            .Where(line => !line.StartsWith('#') &&
-                line.Contains('=', StringComparison.Ordinal))
-            .Select(line => line.Split('=', 2))
-            .ToDictionary(parts => parts[0],
-                parts => parts[1],
-                StringComparer.Ordinal);
-        return $"Server={values["SQLSERVER_HOST"]}," +
-            $"{values["SQLSERVER_PORT"]};" +
-            $"Database={values["SQLSERVER_DATABASE"]};" +
-            $"User ID={values["SQLSERVER_USER"]};" +
-            $"Password={values["MSSQL_SA_PASSWORD"]};" +
-            "TrustServerCertificate=True";
+        builder.ConfigureServices(services =>
+        {
+            services.RemoveAll<DbContextOptions<CrankDemoDbContext>>();
+            services.RemoveAll<CrankDemoDbContext>();
+            services.AddCrankDemoDatabase(connectionString);
+        });
     }
 
     private static string FindProjectRoot()
@@ -82,8 +83,9 @@ public sealed class IntegrationApiFactory : WebApplicationFactory<Program>,
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
         while (directory is not null)
         {
-            if (File.Exists(Path.Combine(directory.FullName,
-                "docker-compose.yml")))
+            if (File.Exists(Path.Combine(
+                directory.FullName,
+                "docker-compose.integration-tests.yml")))
             {
                 return directory.FullName;
             }
@@ -92,6 +94,66 @@ public sealed class IntegrationApiFactory : WebApplicationFactory<Program>,
         }
 
         throw new InvalidOperationException(
-            "Could not locate the project root from the test output path.");
+            "Could not locate the integration-test project root.");
+    }
+
+    private static string GeneratePassword()
+    {
+        var randomBytes = RandomNumberGenerator.GetBytes(32);
+        return $"Aa1!{Convert.ToHexString(randomBytes)}";
+    }
+
+    private static string GetContainerRuntime()
+    {
+        var containerRuntime = Environment.GetEnvironmentVariable(
+            "CRANK_DEMO_CONTAINER_RUNTIME");
+        return string.IsNullOrWhiteSpace(containerRuntime)
+            ? "podman"
+            : containerRuntime;
+    }
+
+    private string CreateConnectionString() =>
+        $"Server={HostName},{HostPort};Database={DatabaseName};" +
+        $"User ID={DatabaseUser};Password={_password};" +
+        "TrustServerCertificate=True";
+
+    private async Task RunDatabaseScriptAsync(string scriptName)
+    {
+        var scriptPath = Path.Combine(
+            _projectRoot,
+            "scripts",
+            scriptName);
+        var startInfo = new ProcessStartInfo(
+            "pwsh",
+            $"-NoProfile -File \"{scriptPath}\"")
+        {
+            WorkingDirectory = _projectRoot,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false
+        };
+        startInfo.Environment["CRANK_DEMO_CONTAINER_RUNTIME"] =
+            _containerRuntime;
+        startInfo.Environment["MSSQL_SA_PASSWORD"] = _password;
+        startInfo.Environment["SQLSERVER_HOST"] = HostName;
+        startInfo.Environment["SQLSERVER_PORT"] = HostPort;
+        startInfo.Environment["SQLSERVER_DATABASE"] = DatabaseName;
+        startInfo.Environment["SQLSERVER_USER"] = DatabaseUser;
+
+        using var process = Process.Start(startInfo) ??
+            throw new InvalidOperationException(
+                $"Could not start {scriptName}.");
+        var standardOutput = process.StandardOutput.ReadToEndAsync();
+        var standardError = process.StandardError.ReadToEndAsync();
+        await process.WaitForExitAsync();
+        var output = await standardOutput;
+        var error = await standardError;
+
+        if (process.ExitCode != 0)
+        {
+            throw new InvalidOperationException(
+                $"{scriptName} failed.{Environment.NewLine}" +
+                $"{output}{Environment.NewLine}{error}");
+        }
     }
 }

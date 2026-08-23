@@ -56,13 +56,13 @@ updates both tools before it runs the benchmark.
 
 ## Container Runtime and Integration Tests
 
-Choose **either Podman or Docker** for this demo. Do not run both at the same
-time: both Compose projects use the same SQL Server port and container name.
+Choose **either Podman or Docker** for a test run. Do not run both. Integration
+tests use `127.0.0.1:14333` and manage their own Compose project.
 
-Copy `.env.example` to the ignored `.env` and replace the SQL Server SA
-password before starting Compose. Integration setup creates a random local
-`.env` if it is missing. No production secret or plaintext application
-password is stored in source-controlled configuration.
+The fixture creates a strong random SQL Server `sa` password for every run. It
+keeps the password in memory and passes it to Compose, migrations, SQL seed
+commands, and the API test host through process environment variables. It
+never writes the password to a file or test output.
 
 ### Podman on Windows
 
@@ -72,17 +72,13 @@ Run these commands from `01-inefficient`:
 podman --version
 podman machine start
 podman info
-podman compose up -d sqlserver
-podman compose ps
-podman compose logs sqlserver
 dotnet test .\MinimalApiCrankDemo.slnx
 ```
 
 `podman --version` confirms that the Podman CLI is installed. On Windows,
 `podman machine start` starts the Linux virtual machine used by Podman.
-`podman info` confirms that the CLI can reach that machine. The Compose
-commands start SQL Server, show its status, and display its logs. The final
-command runs all tests.
+`podman info` confirms that the CLI can reach that machine. Podman is the
+default integration-test runtime.
 
 ### Docker
 
@@ -90,35 +86,31 @@ Run these commands from `01-inefficient`:
 
 ```powershell
 docker version
-docker compose up -d sqlserver
-docker compose ps
-docker compose logs sqlserver
+$env:CRANK_DEMO_CONTAINER_RUNTIME = 'docker'
 dotnet test .\MinimalApiCrankDemo.slnx
+Remove-Item Env:CRANK_DEMO_CONTAINER_RUNTIME
 ```
 
 `docker version` confirms that Docker Desktop or Docker Engine is running.
-The Compose commands start SQL Server, show its status, and display its logs.
-The final command runs all tests.
-
-The current automated integration fixture invokes the Podman-specific
-`scripts/Prepare-IntegrationDatabase.ps1`. The Docker commands above are the
-equivalent container workflow, but a Docker-only test run will require runtime
-selection support in that script. This README-only change does not alter the
-existing test behavior.
+Set `CRANK_DEMO_CONTAINER_RUNTIME` to select Docker for that PowerShell
+session. Remove it afterward to restore the Podman default.
 
 You can also press **Run Tests** in the IDE. The integration-test lifecycle is:
 
-1. Start SQL Server if needed.
-2. Wait for SQL Server to accept connections.
-3. Recreate the disposable `CrankDemo` database.
-4. Run `scripts/Invoke-Migrations.ps1`.
-5. Verify migrations inserted no Identity or application seed data.
-6. Run `scripts/Seed-IntegrationDatabase.ps1` twice to verify idempotency.
-7. Start the API test host.
-8. Run the integration tests.
+1. Generate a random `sa` password in memory.
+2. Remove the previous test container and named volume.
+3. Start a fresh test-only SQL Server container.
+4. Authenticate from Windows through `127.0.0.1:14333`.
+5. Recreate the disposable `CrankDemo` database.
+6. Run `scripts/Invoke-Migrations.ps1`.
+7. Verify migrations inserted no Identity or application seed data.
+8. Run `scripts/Seed-IntegrationDatabase.ps1` twice.
+9. Start the API test host and run the integration tests.
+10. Remove the test container and named volume, even after a failure.
 
-The SQL Server container remains running after the tests, which makes repeated
-test runs faster.
+Each run starts from an empty volume, so integration tests can take longer
+than unit tests. The dedicated container and volume names protect the
+developer and benchmark database.
 
 ### Reset the disposable database
 
@@ -127,17 +119,17 @@ Use the command for your chosen runtime.
 Podman:
 
 ```powershell
-podman compose down -v
+podman compose --file docker-compose.integration-tests.yml down -v
 ```
 
 Docker:
 
 ```powershell
-docker compose down -v
+docker compose --file docker-compose.integration-tests.yml down -v
 ```
 
-`down -v` removes the SQL Server container and its named volume. The next run
-therefore starts with a completely clean database.
+The fixture runs this cleanup automatically. Use these commands only to clean
+up after an interrupted test process.
 
 The test and benchmark Identity account is:
 
@@ -149,6 +141,20 @@ The SQL contains only an ASP.NET Core Identity-compatible password hash.
 ## Migrations and SQL seeds
 
 Migrations and seeding are separate operations. The API never runs either.
+For a manual developer or benchmark database, put the SQL Server settings in
+the current PowerShell process rather than a file:
+
+```powershell
+$saCredential = Get-Credential -UserName sa
+$env:MSSQL_SA_PASSWORD = $saCredential.GetNetworkCredential().Password
+$env:SQLSERVER_HOST = '127.0.0.1'
+$env:SQLSERVER_PORT = '14333'
+$env:SQLSERVER_DATABASE = 'CrankDemo'
+$env:SQLSERVER_USER = 'sa'
+podman compose up -d sqlserver
+```
+
+Use `docker compose` on the last line if Docker is your chosen runtime.
 
 Apply the Database project's schema-only EF Core migrations:
 
@@ -168,8 +174,9 @@ Seed an already migrated benchmark database:
 .\scripts\Seed-BenchmarkDatabase.ps1
 ```
 
-Both seed commands use container `sqlcmd` and the ignored `.env`. Their
-idempotent SQL files are:
+The fixture and Crank launcher provide database settings through their process
+environment. Both seed commands use container `sqlcmd`. Their idempotent SQL
+files are:
 
 - `seed/integration/001-seed-data.sql`
 - `seed/benchmark/001-seed-data.sql`

@@ -3,13 +3,10 @@ param()
 
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
-$envPath = Join-Path $projectRoot '.env'
-if (-not (Test-Path -LiteralPath $envPath)) {
-    throw 'Missing .env. Run the integration tests once or copy .env.example.'
-}
-
-$settings = & (Join-Path $PSScriptRoot 'Read-DatabaseSettings.ps1') `
-    -EnvPath $envPath
+$settings = & (Join-Path $PSScriptRoot 'Get-DatabaseSettings.ps1')
+$databaseProject =
+    '.\src\MinimalApiCrankDemo.Database\' +
+    'MinimalApiCrankDemo.Database.csproj'
 $env:ConnectionStrings__CrankDemo =
     "Server=$($settings.HostName),$($settings.Port);" +
     "Database=$($settings.Database);User ID=$($settings.UserName);" +
@@ -23,9 +20,7 @@ try {
     }
 
     dotnet tool run dotnet-ef database update --project `
-        '.\src\MinimalApiCrankDemo.Database\MinimalApiCrankDemo.Database.csproj' `
-        --startup-project `
-        '.\src\MinimalApiCrankDemo.Database\MinimalApiCrankDemo.Database.csproj'
+        $databaseProject --startup-project $databaseProject
     if ($LASTEXITCODE -ne 0) {
         throw "EF migration failed with exit code $LASTEXITCODE."
     }

@@ -1,14 +1,5 @@
 [CmdletBinding()]
-param(
-    [Parameter(Mandatory)][string] $EnvPath
-)
-
-$values = @{}
-Get-Content -LiteralPath $EnvPath | ForEach-Object {
-    if ($_ -match '^([^#=]+)=(.*)$') {
-        $values[$Matches[1].Trim()] = $Matches[2].Trim()
-    }
-}
+param()
 
 $requiredNames = @(
     'MSSQL_SA_PASSWORD',
@@ -17,10 +8,16 @@ $requiredNames = @(
     'SQLSERVER_DATABASE',
     'SQLSERVER_USER'
 )
+$values = @{}
 foreach ($name in $requiredNames) {
-    if ([string]::IsNullOrWhiteSpace($values[$name])) {
-        throw ".env must define $name."
+    $value = [Environment]::GetEnvironmentVariable(
+        $name,
+        [EnvironmentVariableTarget]::Process)
+    if ([string]::IsNullOrWhiteSpace($value)) {
+        throw "Process environment must define $name."
     }
+
+    $values[$name] = $value
 }
 
 [pscustomobject]@{

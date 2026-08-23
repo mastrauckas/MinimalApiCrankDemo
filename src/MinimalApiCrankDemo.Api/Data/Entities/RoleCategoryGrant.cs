@@ -1,6 +1,6 @@
 namespace MinimalApiCrankDemo.Api.Data.Entities;
 
-internal sealed class RoleCategoryGrant
+public sealed class RoleCategoryGrant
 {
     public int Id { get; init; }
 

@@ -1,6 +1,6 @@
 namespace MinimalApiCrankDemo.Api.Data.Entities;
 
-internal sealed class RecentLogin
+public sealed class RecentLogin
 {
     public int Id { get; init; }
 

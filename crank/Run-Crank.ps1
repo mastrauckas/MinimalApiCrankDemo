@@ -26,6 +26,8 @@ function Install-OrUpdateTool {
 Install-OrUpdateTool 'Microsoft.Crank.Controller' 'crank'
 Install-OrUpdateTool 'Microsoft.Crank.Agent' 'crank-agent'
 
+& (Join-Path $projectRoot 'scripts/Prepare-BenchmarkDatabase.ps1')
+
 $loginBody = @{
     email = 'demo@example.com'
     password = 'DemoPassword123!'

@@ -6,6 +6,9 @@
     <Project Path="tests/MinimalApiCrankDemo.Api.IntegrationTests/MinimalApiCrankDemo.Api.IntegrationTests.csproj" />
     <Project Path="tests/MinimalApiCrankDemo.Api.UnitTests/MinimalApiCrankDemo.Api.UnitTests.csproj" />
   </Folder>
+  <Folder Name="/tools/">
+    <Project Path="tools/MinimalApiCrankDemo.BenchmarkSetup/MinimalApiCrankDemo.BenchmarkSetup.csproj" />
+  </Folder>
   <Folder Name="/http-files/">
     <File Path="http-files/demo.http" />
     <File Path="http-files/health.http" />

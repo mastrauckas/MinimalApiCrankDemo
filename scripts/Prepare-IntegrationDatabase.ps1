@@ -1,6 +1,8 @@
 [CmdletBinding()]
 param()
 
+# Infrastructure and schema only; the integration fixture owns data seeding.
+
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $envPath = Join-Path $projectRoot '.env'
@@ -78,12 +80,6 @@ try {
         '-U', 'sa', '-P', $password, '-C', '-b', '-d', 'CrankDemo',
         '-Q', $schemaOnlyCheck
     )
-
-    & (Join-Path $PSScriptRoot 'Seed-DemoData.ps1')
-
-    # Run the explicit seed command twice. Integration assertions verify that
-    # this second pass does not duplicate any demo rows.
-    & (Join-Path $PSScriptRoot 'Seed-DemoData.ps1')
 }
 finally {
     Pop-Location

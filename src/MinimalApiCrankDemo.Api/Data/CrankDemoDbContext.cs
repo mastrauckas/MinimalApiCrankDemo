@@ -1,6 +1,6 @@
 namespace MinimalApiCrankDemo.Api.Data;
 
-internal sealed class CrankDemoDbContext(
+public sealed class CrankDemoDbContext(
     DbContextOptions<CrankDemoDbContext> options) :
     IdentityDbContext<ApplicationUser, IdentityRole<int>, int>(options)
 {

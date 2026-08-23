@@ -46,7 +46,8 @@ internal static class DemoEndpointsExtensions
         // INTENTIONALLY INEFFICIENT: Identity already loaded and validated the
         // user. Reloading it is a separate optimization target.
         var user = await userManager.FindByEmailAsync(request.Email) ??
-            throw new InvalidOperationException("Signed-in user was not found.");
+            throw new InvalidOperationException(
+                "Signed-in user was not found.");
 
         // INTENTIONALLY INEFFICIENT: separate profile query instead of one
         // composed read model.

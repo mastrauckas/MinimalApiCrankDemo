@@ -1,6 +1,6 @@
 namespace MinimalApiCrankDemo.Api.Data.Entities;
 
-internal sealed class RolePermission
+public sealed class RolePermission
 {
     public int Id { get; init; }
 

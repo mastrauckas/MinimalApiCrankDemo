@@ -1,6 +1,6 @@
 namespace MinimalApiCrankDemo.Api.Data.Entities;
 
-internal sealed class UserProfile
+public sealed class UserProfile
 {
     public int Id { get; init; }
 

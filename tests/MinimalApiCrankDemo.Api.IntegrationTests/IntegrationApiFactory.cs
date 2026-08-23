@@ -10,7 +10,7 @@ public sealed class IntegrationApiFactory : WebApplicationFactory<Program>,
         var scriptPath = Path.Combine(
             _projectRoot,
             "scripts",
-            "Prepare-IntegrationTests.ps1");
+            "Prepare-IntegrationDatabase.ps1");
         var startInfo = new ProcessStartInfo(
             "pwsh",
             $"-NoProfile -File \"{scriptPath}\"")
@@ -36,6 +36,9 @@ public sealed class IntegrationApiFactory : WebApplicationFactory<Program>,
                 $"Integration database setup failed.{Environment.NewLine}" +
                 $"{output}{Environment.NewLine}{error}");
         }
+
+        await DemoDataSeeder.SeedAsync(Services);
+        await DemoDataSeeder.SeedAsync(Services);
     }
 
     Task IAsyncLifetime.DisposeAsync() => Task.CompletedTask;

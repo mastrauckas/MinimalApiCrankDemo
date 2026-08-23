@@ -7,7 +7,7 @@ public sealed class DemoEndpointsTests(
     private readonly HttpClient _client = factory.CreateClient();
 
     [Fact]
-    public async Task SeparateSeedCommand_IsIdempotent()
+    public async Task TestOwnedSeeder_IsIdempotent()
     {
         using var scope = _factory.Services.CreateScope();
         var database = scope.ServiceProvider

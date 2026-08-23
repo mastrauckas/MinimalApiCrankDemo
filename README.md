@@ -29,16 +29,15 @@ Press **Run Tests** in the IDE, or run:
 dotnet test .\MinimalApiCrankDemo.slnx
 ```
 
-The integration fixture runs `scripts/Prepare-IntegrationTests.ps1` before the
-HTTP tests. It starts `sqlserver` with Podman Compose, waits for SQL Server,
-and recreates `CrankDemo`. It then invokes two separate operations in order:
+The integration fixture owns the complete test lifecycle. It calls
+`scripts/Prepare-IntegrationDatabase.ps1`, which starts `sqlserver` with
+Podman Compose, waits for SQL Server, recreates `CrankDemo`, and invokes
+`scripts/Apply-Migrations.ps1`. The fixture then runs its test-owned C# seeder
+from `tests/MinimalApiCrankDemo.Api.IntegrationTests/Seeding`.
 
-1. `scripts/Apply-Migrations.ps1` applies schema-only EF Core migrations.
-2. `scripts/Seed-DemoData.ps1` runs the explicit Identity/catalog seed command.
-
-The test setup runs the seed command a second time, and an integration test
-asserts that users, roles, products, permissions, and related rows were not
-duplicated. The container stays running for fast repeat runs.
+The fixture runs that idempotent seeder twice. An integration test asserts that
+users, roles, products, permissions, and related rows were not duplicated. The
+container stays running for fast repeat runs.
 
 The seeded demo Identity account is:
 
@@ -49,10 +48,12 @@ These are deliberately public demo credentials, not an infrastructure secret.
 Identity password hashing occurs at seed time; no password hash is stored in
 source.
 
-Database recreation is defined under `seed/`; schema is defined by the EF Core
-migrations in `src/MinimalApiCrankDemo.Api/Data/Migrations`.
+Database recreation is defined under `seed/`. The API project owns only the
+DbContext, Identity configuration, endpoints, and schema migrations under
+`src/MinimalApiCrankDemo.Api/Data/Migrations`. It contains no test or benchmark
+seed data and exposes no database-initialization command-line flags.
 
-## Migrate and seed are separate commands
+## Schema migrations
 
 Normal API startup never applies migrations and never seeds data.
 
@@ -71,28 +72,13 @@ dotnet tool run dotnet-ef database update `
   --startup-project .\src\MinimalApiCrankDemo.Api\MinimalApiCrankDemo.Api.csproj
 ```
 
-That command changes schema only. It does not invoke the demo seeder.
-
-After the database is migrated, seed the development/demo rows explicitly:
-
-```powershell
-.\scripts\Seed-DemoData.ps1
-```
-
-The wrapper loads the ignored `.env` connection settings and invokes:
-
-```powershell
-dotnet run --project .\src\MinimalApiCrankDemo.Api `
-  -- --seed-demo-data
-```
-
-The seed command refuses to run while migrations are pending. It is
-idempotent, so repeated runs preserve one demo user, the expected roles and
-permissions, and one copy of every catalog and related row.
+That command changes schema only. Test data belongs to the integration-test
+fixture. Benchmark data preparation belongs to the benchmark tooling.
 
 ## Start and call the API
 
-Recreate, migrate, and seed through the tests once, then start the API:
+Prepare data through the integration tests or benchmark preparation tooling,
+then start the API:
 
 ```powershell
 .\scripts\Start-Api.ps1
@@ -130,13 +116,17 @@ Keep the API running, then execute:
 The exact flow performed by the script is:
 
 1. install or update the Crank controller and local agent;
-2. `POST /api/auth/login` with the seeded Identity credentials;
-3. read `accessToken` from Identity's response;
-4. pass `bearerToken=<token>` to the `products` Crank scenario; and
-5. run Bombardier against `GET http://localhost:8640/api/products` with
+2. call `scripts/Prepare-BenchmarkDatabase.ps1` to start SQL Server, recreate
+   the database, apply API-owned migrations, and run the tooling-owned seeder;
+3. `POST /api/auth/login` with the seeded Identity credentials;
+4. read `accessToken` from Identity's response;
+5. pass `bearerToken=<token>` to the `products` Crank scenario; and
+6. run Bombardier against `GET http://localhost:8640/api/products` with
    `Authorization: Bearer <token>`.
 
-The scenario is in `crank/crank.yml`. It never writes the token to disk.
+The benchmark setup reuses the idempotent data builder compiled from the
+integration-test tooling; no seed code is compiled into the API. The scenario
+is in `crank/crank.yml`. It never writes the token to disk.
 
 ## Intentional optimization targets
 

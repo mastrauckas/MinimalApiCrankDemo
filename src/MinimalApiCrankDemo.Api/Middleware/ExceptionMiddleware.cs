@@ -1,6 +1,6 @@
 namespace MinimalApiCrankDemo.Api.Middleware;
 
-internal class ExceptionMiddleware(RequestDelegate next,
+public sealed class ExceptionMiddleware(RequestDelegate next,
     ILogger<ExceptionMiddleware> logger,
     IProblemDetailsService problemDetailsService)
 {

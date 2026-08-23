@@ -1,39 +1,35 @@
-namespace MinimalApiCrankDemo.Api.Data;
+namespace MinimalApiCrankDemo.Api.IntegrationTests.Seeding;
 
-internal static class DemoDataSeederExtensions
+public static class DemoDataSeeder
 {
     private const string DemoEmail = "demo@example.com";
     private const string DemoPassword = "DemoPassword123!";
 
-    extension(WebApplication app)
+    public static async Task SeedAsync(IServiceProvider services)
     {
-        public async Task SeedDemoDataAsync()
+        await using var scope = services.CreateAsyncScope();
+        var database = scope.ServiceProvider
+            .GetRequiredService<CrankDemoDbContext>();
+        var pendingMigrations = await database.Database
+            .GetPendingMigrationsAsync();
+        if (pendingMigrations.Any())
         {
-            await using var scope = app.Services.CreateAsyncScope();
-            var database = scope.ServiceProvider
-                .GetRequiredService<CrankDemoDbContext>();
-            var pendingMigrations = await database.Database
-                .GetPendingMigrationsAsync();
-            if (pendingMigrations.Any())
-            {
-                throw new InvalidOperationException(
-                    "The database must be migrated before demo data is " +
-                    "seeded. Run scripts/Apply-Migrations.ps1 first.");
-            }
-
-            var userManager = scope.ServiceProvider
-                .GetRequiredService<UserManager<ApplicationUser>>();
-            var roleManager = scope.ServiceProvider
-                .GetRequiredService<RoleManager<IdentityRole<int>>>();
-            var roles = await EnsureRolesAsync(roleManager);
-            var user = await EnsureUserAsync(userManager, roles.Keys);
-
-            await EnsureUserDataAsync(database, user.Id, roles);
-            var categories = await EnsureCategoriesAsync(database);
-            await EnsureRoleGrantsAsync(database, roles, categories);
-            var products = await EnsureProductsAsync(database, categories);
-            await EnsureProductDataAsync(database, products);
+            throw new InvalidOperationException(
+                "The database must be migrated before test data is seeded.");
         }
+
+        var userManager = scope.ServiceProvider
+            .GetRequiredService<UserManager<ApplicationUser>>();
+        var roleManager = scope.ServiceProvider
+            .GetRequiredService<RoleManager<IdentityRole<int>>>();
+        var roles = await EnsureRolesAsync(roleManager);
+        var user = await EnsureUserAsync(userManager, roles.Keys);
+
+        await EnsureUserDataAsync(database, user.Id, roles);
+        var categories = await EnsureCategoriesAsync(database);
+        await EnsureRoleGrantsAsync(database, roles, categories);
+        var products = await EnsureProductsAsync(database, categories);
+        await EnsureProductDataAsync(database, products);
     }
 
     private static async Task<
@@ -92,7 +88,7 @@ internal static class DemoDataSeederExtensions
     private static async Task EnsureUserDataAsync(
         CrankDemoDbContext database,
         int userId,
-        IReadOnlyDictionary<string, IdentityRole<int>> roles)
+        Dictionary<string, IdentityRole<int>> roles)
     {
         if (!await database.UserProfiles.AnyAsync(
             profile => profile.UserId == userId))
@@ -181,8 +177,8 @@ internal static class DemoDataSeederExtensions
 
     private static async Task EnsureRoleGrantsAsync(
         CrankDemoDbContext database,
-        IReadOnlyDictionary<string, IdentityRole<int>> roles,
-        IReadOnlyDictionary<string, ProductCategory> categories)
+        Dictionary<string, IdentityRole<int>> roles,
+        Dictionary<string, ProductCategory> categories)
     {
         await EnsureRoleGrantAsync(
             database,
@@ -222,7 +218,7 @@ internal static class DemoDataSeederExtensions
 
     private static async Task<Product[]> EnsureProductsAsync(
         CrankDemoDbContext database,
-        IReadOnlyDictionary<string, ProductCategory> categories)
+        Dictionary<string, ProductCategory> categories)
     {
         var candidates = CreateProducts(categories);
         var products = new List<Product>();
@@ -245,7 +241,7 @@ internal static class DemoDataSeederExtensions
     }
 
     private static Product[] CreateProducts(
-        IReadOnlyDictionary<string, ProductCategory> categories) =>
+        Dictionary<string, ProductCategory> categories) =>
     [
         CreateProduct(categories["Keyboards"].Id,
             "KEY-001", "Compact Keyboard"),

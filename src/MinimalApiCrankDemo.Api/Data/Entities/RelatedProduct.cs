@@ -1,6 +1,6 @@
 namespace MinimalApiCrankDemo.Api.Data.Entities;
 
-internal sealed class RelatedProduct
+public sealed class RelatedProduct
 {
     public int Id { get; init; }
 

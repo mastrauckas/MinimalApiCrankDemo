@@ -1,6 +1,6 @@
 namespace MinimalApiCrankDemo.Api.Dtos;
 
-internal sealed record ProductDto(
+public sealed record ProductDto(
     int Id,
     string Sku,
     string Name,

@@ -24,11 +24,14 @@ internal static class BenchmarkCommands
         Console.WriteLine("7. Prepare benchmark SQL Server");
         Console.WriteLine("8. Reset benchmark data");
         Console.WriteLine("9. Stop and remove benchmark SQL Server");
+        Console.WriteLine();
+        Console.WriteLine("Siege information:");
+        Console.WriteLine("10. View Siege configuration");
         Console.Write("> ");
         if (!int.TryParse(Console.ReadLine(), out var selection) ||
-            selection is < 1 or > 9)
+            selection is < 1 or > 10)
         {
-            throw new InvalidOperationException("Choose a number from 1 through 9.");
+            throw new InvalidOperationException("Choose a number from 1 through 10.");
         }
 
         switch (selection)
@@ -44,6 +47,9 @@ internal static class BenchmarkCommands
             case 9:
                 await DatabaseCommands.CleanupBenchmarkAsync(context);
                 Console.WriteLine("Benchmark SQL Server container and volume were removed.");
+                return;
+            case 10:
+                await ShowSiegeConfigurationAsync(context);
                 return;
         }
 
@@ -62,6 +68,15 @@ internal static class BenchmarkCommands
         var variant = ReadOption(arguments, "--variant") ?? "01-inefficient";
         var setup = arguments.Contains("--setup", StringComparer.OrdinalIgnoreCase);
         await RunAsync(context, tool, variant, setup);
+    }
+
+    public static async Task ShowSiegeConfigurationAsync(ToolContext context)
+    {
+        var image = "minimal-api-performance-demo-siege:local";
+        var dockerfile = Path.Combine(context.RepositoryRoot, "benchmarks", "siege");
+        await ProcessRunner.RunAsync(context.Runtime, ["build", "--tag", image, dockerfile], context.RepositoryRoot);
+        var output = await ProcessRunner.RunAsync(context.Runtime, ["run", "--rm", image, "-C"], context.RepositoryRoot);
+        Console.WriteLine(output);
     }
 
     private static async Task RunAsync(ToolContext context, string tool, string variant, bool setup)

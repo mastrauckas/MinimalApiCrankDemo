@@ -34,6 +34,9 @@ Benchmark database:
 7. Prepare benchmark SQL Server
 8. Reset benchmark data
 9. Stop and remove benchmark SQL Server
+
+Siege information:
+10. View Siege configuration
 ```
 
 The menu prepares the disposable benchmark SQL Server database, applies the
@@ -79,6 +82,7 @@ dotnet .\tools\RunPerformanceDemo.cs cleanup-integration
 dotnet .\tools\RunPerformanceDemo.cs prepare-benchmark
 dotnet .\tools\RunPerformanceDemo.cs reset-benchmark
 dotnet .\tools\RunPerformanceDemo.cs cleanup-benchmark
+dotnet .\tools\RunPerformanceDemo.cs siege-config
 dotnet .\tools\RunPerformanceDemo.cs benchmark --tool crank --variant 01-inefficient --setup
 dotnet .\tools\RunPerformanceDemo.cs benchmark --tool siege --variant 01-inefficient --setup
 dotnet .\tools\RunPerformanceDemo.cs build-migration-bundle --version 1.0.0

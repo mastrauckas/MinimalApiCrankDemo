@@ -31,6 +31,9 @@ try
         case "cleanup-benchmark":
             await DatabaseCommands.CleanupBenchmarkAsync(context);
             break;
+        case "siege-config":
+            await BenchmarkCommands.ShowSiegeConfigurationAsync(context);
+            break;
         case "benchmark":
             await BenchmarkCommands.RunFromArgumentsAsync(context, args[1..]);
             break;
@@ -46,7 +49,7 @@ try
         default:
             throw new InvalidOperationException(
                 "Commands: menu, prepare-integration, cleanup-integration, prepare-benchmark, " +
-                "reset-benchmark, cleanup-benchmark, " +
+                "reset-benchmark, cleanup-benchmark, siege-config, " +
                 "benchmark, migrate, build-migration-bundle, migrate-production.");
     }
 }

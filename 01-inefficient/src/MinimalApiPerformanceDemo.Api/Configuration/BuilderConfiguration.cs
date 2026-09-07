@@ -262,7 +262,7 @@ internal static class BuilderConfigurationExtensions
                 .GetConnectionString("PerformanceDemo") ??
                 throw new InvalidOperationException(
                     "ConnectionStrings:PerformanceDemo is required. " +
-                    "Use scripts/Start-Api.ps1.");
+                    "Use tools/RunPerformanceDemo.cs.");
 
             builder.Services.AddPerformanceDemoDatabase(connectionString);
         }

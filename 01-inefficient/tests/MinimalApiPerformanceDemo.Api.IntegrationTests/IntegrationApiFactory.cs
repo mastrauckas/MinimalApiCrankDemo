@@ -16,15 +16,13 @@ public sealed class IntegrationApiFactory : WebApplicationFactory<Program>,
     {
         try
         {
-            await RunDatabaseScriptAsync(
-                "Prepare-IntegrationDatabase.ps1");
+            await RunToolAsync("prepare-integration");
         }
         catch (Exception setupException)
         {
             try
             {
-                await RunDatabaseScriptAsync(
-                    "Remove-IntegrationDatabase.ps1");
+                await RunToolAsync("cleanup-integration");
             }
             catch (Exception cleanupException)
             {
@@ -46,8 +44,7 @@ public sealed class IntegrationApiFactory : WebApplicationFactory<Program>,
         }
         finally
         {
-            await RunDatabaseScriptAsync(
-                "Remove-IntegrationDatabase.ps1");
+            await RunToolAsync("cleanup-integration");
         }
     }
 
@@ -85,7 +82,8 @@ public sealed class IntegrationApiFactory : WebApplicationFactory<Program>,
         {
             if (File.Exists(Path.Combine(
                 directory.FullName,
-                "docker-compose.integration-tests.yml")))
+                "tools",
+                "RunPerformanceDemo.cs")))
             {
                 return directory.FullName;
             }
@@ -117,21 +115,22 @@ public sealed class IntegrationApiFactory : WebApplicationFactory<Program>,
         $"User ID={DatabaseUser};Password={_password};" +
         "TrustServerCertificate=True";
 
-    private async Task RunDatabaseScriptAsync(string scriptName)
+    private async Task RunToolAsync(string command)
     {
-        var scriptPath = Path.Combine(
+        var toolPath = Path.Combine(
             _projectRoot,
-            "scripts",
-            scriptName);
+            "tools",
+            "RunPerformanceDemo.cs");
         var startInfo = new ProcessStartInfo(
-            "pwsh",
-            $"-NoProfile -File \"{scriptPath}\"")
+            "dotnet")
         {
             WorkingDirectory = _projectRoot,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             UseShellExecute = false
         };
+        startInfo.ArgumentList.Add(toolPath);
+        startInfo.ArgumentList.Add(command);
         startInfo.Environment["PERFORMANCE_DEMO_CONTAINER_RUNTIME"] =
             _containerRuntime;
         startInfo.Environment["MSSQL_SA_PASSWORD"] = _password;
@@ -142,7 +141,7 @@ public sealed class IntegrationApiFactory : WebApplicationFactory<Program>,
 
         using var process = Process.Start(startInfo) ??
             throw new InvalidOperationException(
-                $"Could not start {scriptName}.");
+                $"Could not start {command}.");
         var standardOutput = process.StandardOutput.ReadToEndAsync();
         var standardError = process.StandardError.ReadToEndAsync();
         await process.WaitForExitAsync();
@@ -152,7 +151,7 @@ public sealed class IntegrationApiFactory : WebApplicationFactory<Program>,
         if (process.ExitCode != 0)
         {
             throw new InvalidOperationException(
-                $"{scriptName} failed.{Environment.NewLine}" +
+                $"{command} failed.{Environment.NewLine}" +
                 $"{output}{Environment.NewLine}{error}");
         }
     }

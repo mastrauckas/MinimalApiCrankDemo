@@ -22,6 +22,15 @@ try
         case "cleanup-integration":
             await DatabaseCommands.CleanupIntegrationAsync(context);
             break;
+        case "prepare-benchmark":
+            await DatabaseCommands.PrepareBenchmarkAsync(context, "01-inefficient");
+            break;
+        case "reset-benchmark":
+            await DatabaseCommands.ResetBenchmarkDataAsync(context, "01-inefficient");
+            break;
+        case "cleanup-benchmark":
+            await DatabaseCommands.CleanupBenchmarkAsync(context);
+            break;
         case "benchmark":
             await BenchmarkCommands.RunFromArgumentsAsync(context, args[1..]);
             break;
@@ -36,7 +45,8 @@ try
             break;
         default:
             throw new InvalidOperationException(
-                "Commands: menu, prepare-integration, cleanup-integration, " +
+                "Commands: menu, prepare-integration, cleanup-integration, prepare-benchmark, " +
+                "reset-benchmark, cleanup-benchmark, " +
                 "benchmark, migrate, build-migration-bundle, migrate-production.");
     }
 }

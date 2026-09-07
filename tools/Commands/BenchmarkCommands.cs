@@ -14,16 +14,37 @@ internal static class BenchmarkCommands
             ("k6 — 02 Efficient (not implemented)", "k6", "02-efficient")
         };
 
-        Console.WriteLine("Choose a benchmark:");
+        Console.WriteLine("Load tests:");
         for (var index = 0; index < choices.Length; index++)
         {
             Console.WriteLine($"{index + 1}. {choices[index].Item1}");
         }
+        Console.WriteLine();
+        Console.WriteLine("Benchmark database:");
+        Console.WriteLine("7. Prepare benchmark SQL Server");
+        Console.WriteLine("8. Reset benchmark data");
+        Console.WriteLine("9. Stop and remove benchmark SQL Server");
         Console.Write("> ");
         if (!int.TryParse(Console.ReadLine(), out var selection) ||
-            selection is < 1 or > 6)
+            selection is < 1 or > 9)
         {
-            throw new InvalidOperationException("Choose a number from 1 through 6.");
+            throw new InvalidOperationException("Choose a number from 1 through 9.");
+        }
+
+        switch (selection)
+        {
+            case 7:
+                await DatabaseCommands.PrepareBenchmarkAsync(context, "01-inefficient");
+                Console.WriteLine("Benchmark SQL Server is prepared with fresh migrated and seeded data.");
+                return;
+            case 8:
+                await DatabaseCommands.ResetBenchmarkDataAsync(context, "01-inefficient");
+                Console.WriteLine("Benchmark data has been reset without restarting SQL Server.");
+                return;
+            case 9:
+                await DatabaseCommands.CleanupBenchmarkAsync(context);
+                Console.WriteLine("Benchmark SQL Server container and volume were removed.");
+                return;
         }
 
         var choice = choices[selection - 1];

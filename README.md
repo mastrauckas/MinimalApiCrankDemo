@@ -29,6 +29,11 @@ It presents the available tool/implementation combinations:
 4. Siege — 02 Efficient (not implemented)
 5. k6 — 01 Inefficient (not implemented)
 6. k6 — 02 Efficient (not implemented)
+
+Benchmark database:
+7. Prepare benchmark SQL Server
+8. Reset benchmark data
+9. Stop and remove benchmark SQL Server
 ```
 
 The menu prepares the disposable benchmark SQL Server database, applies the
@@ -37,7 +42,7 @@ API, logs in with ASP.NET Core Identity, and runs the selected load tool.
 
 ## Prerequisites
 
-- .NET 10 SDK
+- .NET 10.0.400 SDK or a later .NET 10 feature band (selected by `global.json`)
 - Podman on Windows, including a running Podman machine, or Docker
 - For Crank: the tool installs its controller and agent automatically
 
@@ -71,6 +76,9 @@ Use these commands for repeatable local runs or CI:
 ```powershell
 dotnet .\tools\RunPerformanceDemo.cs prepare-integration
 dotnet .\tools\RunPerformanceDemo.cs cleanup-integration
+dotnet .\tools\RunPerformanceDemo.cs prepare-benchmark
+dotnet .\tools\RunPerformanceDemo.cs reset-benchmark
+dotnet .\tools\RunPerformanceDemo.cs cleanup-benchmark
 dotnet .\tools\RunPerformanceDemo.cs benchmark --tool crank --variant 01-inefficient --setup
 dotnet .\tools\RunPerformanceDemo.cs benchmark --tool siege --variant 01-inefficient --setup
 dotnet .\tools\RunPerformanceDemo.cs build-migration-bundle --version 1.0.0

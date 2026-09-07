@@ -32,9 +32,21 @@ internal static class DatabaseCommands
     {
         var password = GeneratePassword();
         var environment = Settings(password, "PerformanceDemoBenchmark", "14334");
-        await ComposeAsync(context, "docker-compose.benchmark.yml", "down", "-v", "--remove-orphans", environment);
+        await CleanupBenchmarkAsync(context, environment);
         await ComposeAsync(context, "docker-compose.benchmark.yml", "up", "-d", "sqlserver", environment);
         await WaitForSqlAsync("127.0.0.1", "14334", password);
+        await RecreateAsync(context, BenchmarkContainer, environment);
+        await MigrateAsync(context, variant, environment);
+        await SeedAsync(context, BenchmarkContainer, environment, "benchmark");
+    }
+
+    public static Task CleanupBenchmarkAsync(ToolContext context) =>
+        CleanupBenchmarkAsync(context, null);
+
+    public static async Task ResetBenchmarkDataAsync(ToolContext context, string variant)
+    {
+        var environment = await ReadBenchmarkEnvironmentAsync(context);
+        await WaitForSqlAsync("127.0.0.1", "14334", environment["MSSQL_SA_PASSWORD"]);
         await RecreateAsync(context, BenchmarkContainer, environment);
         await MigrateAsync(context, variant, environment);
         await SeedAsync(context, BenchmarkContainer, environment, "benchmark");
@@ -90,6 +102,11 @@ internal static class DatabaseCommands
 
     private static async Task ComposeAsync(ToolContext context, string file, params string[] arguments) =>
         await ComposeAsync(context, file, arguments, null);
+
+    private static Task CleanupBenchmarkAsync(
+        ToolContext context,
+        IReadOnlyDictionary<string, string>? environment) =>
+        ComposeAsync(context, "docker-compose.benchmark.yml", ["down", "-v", "--remove-orphans"], environment);
 
     private static Task ComposeAsync(ToolContext context, string file, string first, string second, string third, IReadOnlyDictionary<string, string> environment) =>
         ComposeAsync(context, file, [first, second, third], environment);
@@ -153,6 +170,21 @@ internal static class DatabaseCommands
     };
 
     private static string GeneratePassword() => "Aa1!" + Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
+
+    private static async Task<Dictionary<string, string>> ReadBenchmarkEnvironmentAsync(ToolContext context)
+    {
+        var inspect = await ProcessRunner.RunAsync(context.Runtime, ["inspect", BenchmarkContainer], context.RepositoryRoot);
+        using var document = JsonDocument.Parse(inspect);
+        var password = document.RootElement[0].GetProperty("Config").GetProperty("Env")
+            .EnumerateArray()
+            .Select(element => element.GetString())
+            .FirstOrDefault(value => value?.StartsWith("MSSQL_SA_PASSWORD=", StringComparison.Ordinal) == true)?["MSSQL_SA_PASSWORD=".Length..];
+        if (string.IsNullOrWhiteSpace(password))
+        {
+            throw new InvalidOperationException("The benchmark SQL Server password could not be read.");
+        }
+        return Settings(password, "PerformanceDemoBenchmark", "14334");
+    }
 
     private static string? ReadOption(string[] arguments, string name)
     {

@@ -1,0 +1,3 @@
+global using MinimalApiPerformanceDemo.Application.Dtos;
+global using MinimalApiPerformanceDemo.Application.Repositories;
+global using MinimalApiPerformanceDemo.Application.Results;

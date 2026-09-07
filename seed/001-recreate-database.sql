@@ -1,0 +1,9 @@
+IF DB_ID(N'PerformanceDemo') IS NOT NULL
+BEGIN
+    ALTER DATABASE PerformanceDemo SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+    DROP DATABASE PerformanceDemo;
+END;
+GO
+
+CREATE DATABASE PerformanceDemo;
+GO

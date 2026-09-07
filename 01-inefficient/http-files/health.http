@@ -1,0 +1,10 @@
+@baseUrl = http://localhost:8640
+
+### Combined health check
+GET {{baseUrl}}/health
+
+### Liveness probe (Kubernetes: is the process running?)
+GET {{baseUrl}}/health/live
+
+### Readiness probe (Kubernetes: is the app ready to serve traffic?)
+GET {{baseUrl}}/health/ready

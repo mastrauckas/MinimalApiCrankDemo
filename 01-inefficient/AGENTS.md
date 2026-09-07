@@ -61,6 +61,18 @@ Always use `var` for local variables. The editorconfig enforces
 `csharp_style_var_elsewhere = true:warning`, which combined with `TreatWarningsAsErrors` makes
 explicit types a build error for locals.
 
+## Package Management
+
+Before changing dependency versions, run both commands from this directory:
+
+```powershell
+dotnet list .\MinimalApiPerformanceDemo.slnx package --outdated
+dotnet list .\MinimalApiPerformanceDemo.slnx package --vulnerable --include-transitive
+```
+
+Resolve reported vulnerabilities and upgrades compatible with the solution's
+target framework. After an upgrade, restore, build, and test the solution.
+
 ## Usings
 
 Never add `using` directives at the top of individual C# files. Always add them to `GlobalUsings.cs`

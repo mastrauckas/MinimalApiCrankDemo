@@ -1,6 +1,6 @@
 #!/usr/bin/env dotnet
 #:property PublishAot=false
-#:package Microsoft.Data.SqlClient@6.1.0
+#:package Microsoft.Data.SqlClient@7.0.2
 #:include Shared/**/*.cs
 #:include Commands/**/*.cs
 

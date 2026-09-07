@@ -10,6 +10,7 @@ load settings.
 ```text
 01-inefficient/     The current API implementation and its tests.
 benchmarks/         Shared Crank, Siege, and future k6 configurations.
+containers/         Shared Docker/Podman Compose infrastructure.
 seed/               Shared schema reset and idempotent benchmark/test seed SQL.
 tools/              File-based C# benchmark, migration, and test setup utility.
 ```

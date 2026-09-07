@@ -1,20 +1,20 @@
-name: minimal-api-performance-demo-integration-tests
+name: minimal-api-performance-demo-benchmark
 
 services:
   sqlserver:
     image: mcr.microsoft.com/mssql/server:2022-latest
-    container_name: performancedemo-integration-sqlserver
+    container_name: performancedemo-benchmark-sqlserver
     environment:
       ACCEPT_EULA: "Y"
       MSSQL_PID: Developer
       MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD}
-      SQLSERVER_DATABASE: PerformanceDemo
+      SQLSERVER_DATABASE: PerformanceDemoBenchmark
       SQLSERVER_USER: sa
     ports:
-      - "14333:1433"
+      - "14334:1433"
     volumes:
-      - performancedemo-integration-sqlserver-data:/var/opt/mssql
-      - ./seed:/seed:ro
+      - performancedemo-benchmark-sqlserver-data:/var/opt/mssql
+      - ../seed:/seed:ro
     healthcheck:
       test:
         - CMD-SHELL
@@ -28,5 +28,5 @@ services:
       start_period: 20s
 
 volumes:
-  performancedemo-integration-sqlserver-data:
-    name: performancedemo-integration-sqlserver-data
+  performancedemo-benchmark-sqlserver-data:
+    name: performancedemo-benchmark-sqlserver-data

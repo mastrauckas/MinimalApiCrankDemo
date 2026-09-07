@@ -10,7 +10,7 @@ internal static class DatabaseCommands
         var password = ToolContext.EnvironmentValue("MSSQL_SA_PASSWORD", GeneratePassword());
         var environment = Settings(password, "PerformanceDemo", "14333");
         await CleanupIntegrationAsync(context);
-        await ComposeAsync(context, "docker-compose.integration-tests.yml", "up", "-d", "sqlserver", environment);
+        await ComposeAsync(context, "containers/docker-compose.integration-tests.yml", "up", "-d", "sqlserver", environment);
         await WaitForSqlAsync("127.0.0.1", "14333", password);
         await RecreateAsync(context, IntegrationContainer, environment);
         await MigrateAsync(context, "01-inefficient", environment);
@@ -22,7 +22,7 @@ internal static class DatabaseCommands
 
     public static async Task CleanupIntegrationAsync(ToolContext context)
     {
-        await ComposeAsync(context, "docker-compose.integration-tests.yml", "down", "-v", "--remove-orphans");
+        await ComposeAsync(context, "containers/docker-compose.integration-tests.yml", "down", "-v", "--remove-orphans");
         await IgnoreFailureAsync(context, "rm", "--force", IntegrationContainer);
         await IgnoreFailureAsync(context, "volume", "rm", "--force", "performancedemo-integration-sqlserver-data");
         await IgnoreFailureAsync(context, "network", "rm", "--force", "minimal-api-performance-demo-integration-tests_default");
@@ -33,7 +33,7 @@ internal static class DatabaseCommands
         var password = GeneratePassword();
         var environment = Settings(password, "PerformanceDemoBenchmark", "14334");
         await CleanupBenchmarkAsync(context, environment);
-        await ComposeAsync(context, "docker-compose.benchmark.yml", "up", "-d", "sqlserver", environment);
+        await ComposeAsync(context, "containers/docker-compose.benchmark.yml", "up", "-d", "sqlserver", environment);
         await WaitForSqlAsync("127.0.0.1", "14334", password);
         await RecreateAsync(context, BenchmarkContainer, environment);
         await MigrateAsync(context, variant, environment);
@@ -106,7 +106,7 @@ internal static class DatabaseCommands
     private static Task CleanupBenchmarkAsync(
         ToolContext context,
         IReadOnlyDictionary<string, string>? environment) =>
-        ComposeAsync(context, "docker-compose.benchmark.yml", ["down", "-v", "--remove-orphans"], environment);
+        ComposeAsync(context, "containers/docker-compose.benchmark.yml", ["down", "-v", "--remove-orphans"], environment);
 
     private static Task ComposeAsync(ToolContext context, string file, string first, string second, string third, IReadOnlyDictionary<string, string> environment) =>
         ComposeAsync(context, file, [first, second, third], environment);

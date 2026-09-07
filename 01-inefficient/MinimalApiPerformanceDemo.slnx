@@ -19,9 +19,9 @@
     <File Path="http-files/health.http" />
   </Folder>
   <Folder Name="/infrastructure/">
-    <File Path="../docker-compose.yml" />
-    <File Path="../docker-compose.benchmark.yml" />
-    <File Path="../docker-compose.integration-tests.yml" />
+    <File Path="../containers/docker-compose.yml" />
+    <File Path="../containers/docker-compose.benchmark.yml" />
+    <File Path="../containers/docker-compose.integration-tests.yml" />
     <File Path="../benchmarks/crank/crank.yml" />
   </Folder>
 </Solution>

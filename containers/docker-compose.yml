@@ -14,7 +14,7 @@ services:
       - "14333:1433"
     volumes:
       - performancedemo-sqlserver-data:/var/opt/mssql
-      - ./seed:/seed:ro
+      - ../seed:/seed:ro
     healthcheck:
       test:
         - CMD-SHELL

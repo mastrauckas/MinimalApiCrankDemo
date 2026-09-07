@@ -343,6 +343,10 @@ transactions, elapsed time, response time, transaction rate, throughput,
 concurrency, and success/failure counts in the terminal. The measured output is
 also saved under `artifacts/benchmarks/siege/`.
 
+On Windows, the Podman runner discovers the active WSL virtual-network gateway
+to reach the API. This avoids relying on the host alias, which may be unable to
+reach a Windows loopback port in rootless Podman.
+
 ## Intentional optimization targets
 
 The repository implementations are inefficient by design. Login validates

@@ -131,7 +131,19 @@ function Invoke-SiegeRun {
     param([Parameter(Mandatory)][int] $Seconds)
 
     $benchmarkHost = if ($runtimeCommand -eq 'podman') {
-        'host.containers.internal'
+        $wslGateway = Get-NetIPAddress -AddressFamily IPv4 |
+            Where-Object {
+                $_.InterfaceAlias -like 'vEthernet (WSL*' -and
+                $_.AddressState -eq 'Preferred'
+            } |
+            Select-Object -First 1 -ExpandProperty IPAddress
+        if ([string]::IsNullOrWhiteSpace($wslGateway)) {
+            throw (
+                'Podman on Windows requires an active WSL virtual-network ' +
+                'adapter to reach the API. Start the Podman machine and retry.')
+        }
+
+        $wslGateway
     }
     else {
         'host.docker.internal'
@@ -147,7 +159,16 @@ function Invoke-SiegeRun {
         throw "Siege failed with exit code $LASTEXITCODE."
     }
 
-    return @($output | ForEach-Object { $_.ToString() })
+    $lines = @($output | ForEach-Object { $_.ToString() })
+    $summary = $lines -join [Environment]::NewLine
+    if ($summary -notmatch '"successful_transactions":\s+([1-9]\d*)' -or
+        $summary -match '"failed_transactions":\s+([1-9]\d*)') {
+        throw (
+            'Siege completed without a successful, error-free measurement. ' +
+            'Confirm that the API is reachable from the benchmark container.')
+    }
+
+    return $lines
 }
 
 foreach ($name in $environmentNames) {

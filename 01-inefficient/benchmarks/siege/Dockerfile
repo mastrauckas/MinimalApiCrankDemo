@@ -1,5 +1,7 @@
-FROM alpine:3.21
+FROM debian:bookworm-slim
 
-RUN apk add --no-cache siege
+RUN apt-get update \
+    && apt-get install --yes --no-install-recommends siege \
+    && rm -rf /var/lib/apt/lists/*
 
 ENTRYPOINT ["siege"]

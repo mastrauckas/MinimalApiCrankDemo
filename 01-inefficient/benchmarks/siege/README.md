@@ -5,7 +5,7 @@ API, and disposable benchmark database as Crank. It does not contain another
 application.
 
 Siege does not run natively on Windows. `Dockerfile` installs it in a small
-Alpine Linux image, built automatically by `scripts/Invoke-SiegeOnly.ps1`.
+Debian Linux image, built automatically by `scripts/Invoke-SiegeOnly.ps1`.
 
 From `01-inefficient`, run either:
 

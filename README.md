@@ -20,7 +20,7 @@ tool. Benchmark assets are grouped by tool beneath `benchmarks/`:
 
 - `benchmarks/crank/` contains the current authenticated products benchmark.
 - `benchmarks/k6/` is reserved for the equivalent k6 scenario.
-- `benchmarks/siege/` is reserved for the equivalent Siege scenario.
+- `benchmarks/siege/` contains the equivalent authenticated Siege scenario.
 
 ## Architecture
 
@@ -62,7 +62,7 @@ The first tool provides the `crank` command. The second provides the local
 `crank-agent` process, which executes benchmark jobs.
 
 Manual installation is optional. The benchmark entry points install or update
-both tools through the lower-level `crank\Run-Crank.ps1` script.
+both tools through the lower-level `benchmarks\crank\Run-Crank.ps1` script.
 
 ## Container Runtime and Integration Tests
 
@@ -318,6 +318,30 @@ tokens and SQL Server passwords are never written to the result file or logs.
 `benchmarks/crank/Run-Crank.ps1` is now the lower-level scenario runner. It expects a
 bearer token and result path, so use the two entry points above for normal
 benchmark work.
+
+## Run authenticated Siege
+
+Siege runs in a small local Linux container because it does not support native
+Windows execution. The runner builds that image automatically on its first run.
+It runs the same products request as Crank: 32 concurrent clients, a 5-second
+warmup, then a 15-second measured run.
+
+For a complete Podman benchmark run:
+
+```powershell
+.\scripts\Invoke-BenchmarkSetupAndSiege.ps1
+```
+
+After the benchmark database has been prepared, rerun only the Siege load test:
+
+```powershell
+.\scripts\Invoke-SiegeOnly.ps1
+```
+
+For Docker, add `-ContainerRuntime Docker` to either command. Siege prints its
+transactions, elapsed time, response time, transaction rate, throughput,
+concurrency, and success/failure counts in the terminal. The measured output is
+also saved under `artifacts/benchmarks/siege/`.
 
 ## Intentional optimization targets
 

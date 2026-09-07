@@ -5,6 +5,10 @@ param(
     [string] $ContainerRuntime = 'Podman',
 
     [Parameter()]
+    [ValidateSet('Crank', 'Siege')]
+    [string] $BenchmarkTool = 'Crank',
+
+    [Parameter()]
     [switch] $Cleanup
 )
 
@@ -160,7 +164,7 @@ try {
                 -TimeoutSec 2 | Out-Null
             throw (
                 "An API is already running at $apiAddress. Stop it or use " +
-                'Invoke-CrankOnly.ps1.')
+                "Invoke-$BenchmarkTool`Only.ps1.")
         }
         catch {
             if ($_.Exception.Message -like 'An API is already running*') {
@@ -174,7 +178,7 @@ try {
             -WindowStyle Hidden -PassThru
         Wait-ForApi
 
-        & (Join-Path $PSScriptRoot 'Invoke-CrankOnly.ps1') `
+        & (Join-Path $PSScriptRoot "Invoke-$BenchmarkTool`Only.ps1") `
             -ContainerRuntime $ContainerRuntime
     }
     finally {

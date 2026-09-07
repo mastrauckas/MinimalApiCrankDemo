@@ -2,12 +2,12 @@
 param()
 
 $ErrorActionPreference = 'Stop'
-$containerRuntime = $env:CRANK_DEMO_CONTAINER_RUNTIME
+$containerRuntime = $env:PERFORMANCE_DEMO_CONTAINER_RUNTIME
 if ([string]::IsNullOrWhiteSpace($containerRuntime)) {
     $containerRuntime = 'podman'
 }
 
-& $containerRuntime exec crankdemo-integration-sqlserver `
+& $containerRuntime exec performancedemo-integration-sqlserver `
     /bin/bash -c @'
 SQLCMDPASSWORD="$MSSQL_SA_PASSWORD" /opt/mssql-tools18/bin/sqlcmd \
   -S localhost -U "$SQLSERVER_USER" -C -b -I \

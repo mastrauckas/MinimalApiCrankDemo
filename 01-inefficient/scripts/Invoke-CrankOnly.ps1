@@ -10,7 +10,7 @@ $projectRoot = Split-Path -Parent $PSScriptRoot
 $apiBaseAddress = 'http://127.0.0.1:8640'
 $healthAddress = "$apiBaseAddress/health/live"
 $runtimeCommand = $ContainerRuntime.ToLowerInvariant()
-$containerName = 'crankdemo-benchmark-sqlserver'
+$containerName = 'performancedemo-benchmark-sqlserver'
 $apiProcess = $null
 $environmentNames = @(
     'MSSQL_SA_PASSWORD',
@@ -18,12 +18,12 @@ $environmentNames = @(
     'SQLSERVER_PORT',
     'SQLSERVER_DATABASE',
     'SQLSERVER_USER',
-    'ConnectionStrings__CrankDemo'
+    'ConnectionStrings__PerformanceDemo'
 )
 $originalEnvironment = @{}
 $timestamp = [DateTime]::UtcNow.ToString('yyyyMMdd-HHmmss')
 $resultPath = Join-Path $projectRoot `
-    "artifacts/crank/inefficient-products-$timestamp.json"
+    "artifacts/benchmarks/crank/inefficient-products-$timestamp.json"
 
 function Test-ApiHealth {
     try {
@@ -70,10 +70,10 @@ function Start-ExistingBenchmarkApi {
         $passwordEntry.Substring('MSSQL_SA_PASSWORD='.Length)
     $env:SQLSERVER_HOST = '127.0.0.1'
     $env:SQLSERVER_PORT = '14334'
-    $env:SQLSERVER_DATABASE = 'CrankDemoBenchmark'
+    $env:SQLSERVER_DATABASE = 'PerformanceDemoBenchmark'
     $env:SQLSERVER_USER = 'sa'
-    $env:ConnectionStrings__CrankDemo =
-        'Server=127.0.0.1,14334;Database=CrankDemoBenchmark;' +
+    $env:ConnectionStrings__PerformanceDemo =
+        'Server=127.0.0.1,14334;Database=PerformanceDemoBenchmark;' +
         'User ID=sa;' +
         "Password=$($env:MSSQL_SA_PASSWORD);" +
         'TrustServerCertificate=True'
@@ -128,7 +128,7 @@ try {
         throw 'The Identity login response did not contain an access token.'
     }
 
-    & (Join-Path $projectRoot 'crank/Run-Crank.ps1') `
+    & (Join-Path $projectRoot 'benchmarks/crank/Run-Crank.ps1') `
         -BearerToken $bearerToken `
         -ResultPath $resultPath
 }

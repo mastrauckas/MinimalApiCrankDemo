@@ -5,9 +5,9 @@ $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $settings = & (Join-Path $PSScriptRoot 'Get-DatabaseSettings.ps1')
 $databaseProject =
-    '.\src\MinimalApiCrankDemo.Database\' +
-    'MinimalApiCrankDemo.Database.csproj'
-$env:ConnectionStrings__CrankDemo =
+    '.\src\MinimalApiPerformanceDemo.Database\' +
+    'MinimalApiPerformanceDemo.Database.csproj'
+$env:ConnectionStrings__PerformanceDemo =
     "Server=$($settings.HostName),$($settings.Port);" +
     "Database=$($settings.Database);User ID=$($settings.UserName);" +
     "Password=$($settings.Password);TrustServerCertificate=True"

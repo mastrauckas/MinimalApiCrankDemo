@@ -9,8 +9,8 @@ $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $composeFile = Join-Path $projectRoot 'docker-compose.benchmark.yml'
 $runtimeCommand = $ContainerRuntime.ToLowerInvariant()
-$containerName = 'crankdemo-benchmark-sqlserver'
-$volumeName = 'crankdemo-benchmark-sqlserver-data'
+$containerName = 'performancedemo-benchmark-sqlserver'
+$volumeName = 'performancedemo-benchmark-sqlserver-data'
 
 if (-not $PSCmdlet.ShouldProcess(
     "$containerName and $volumeName",

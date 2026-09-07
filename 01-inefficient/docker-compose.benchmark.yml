@@ -1,19 +1,19 @@
-name: minimal-api-crank-demo-benchmark
+name: minimal-api-performance-demo-benchmark
 
 services:
   sqlserver:
     image: mcr.microsoft.com/mssql/server:2022-latest
-    container_name: crankdemo-benchmark-sqlserver
+    container_name: performancedemo-benchmark-sqlserver
     environment:
       ACCEPT_EULA: "Y"
       MSSQL_PID: Developer
       MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD}
-      SQLSERVER_DATABASE: CrankDemoBenchmark
+      SQLSERVER_DATABASE: PerformanceDemoBenchmark
       SQLSERVER_USER: sa
     ports:
       - "14334:1433"
     volumes:
-      - crankdemo-benchmark-sqlserver-data:/var/opt/mssql
+      - performancedemo-benchmark-sqlserver-data:/var/opt/mssql
       - ./seed:/seed:ro
     healthcheck:
       test:
@@ -28,5 +28,5 @@ services:
       start_period: 20s
 
 volumes:
-  crankdemo-benchmark-sqlserver-data:
-    name: crankdemo-benchmark-sqlserver-data
+  performancedemo-benchmark-sqlserver-data:
+    name: performancedemo-benchmark-sqlserver-data

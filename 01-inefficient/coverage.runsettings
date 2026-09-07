@@ -6,7 +6,7 @@
         <Configuration>
           <ExcludeByAttribute>GeneratedCodeAttribute,ExcludeFromCodeCoverageAttribute</ExcludeByAttribute>
           <ExcludeByFile>**/*.g.cs,**/*.generated.cs</ExcludeByFile>
-          <Exclude>[*.Generated]*,[System.Runtime.CompilerServices]*,[*.Tests]*,[*.UnitTests]*,[*.IntegrationTests]*,[MinimalApiCrankDemo.Api.UnitTests]*,[MinimalApiCrankDemo.Api.IntegrationTests]*</Exclude>
+          <Exclude>[*.Generated]*,[System.Runtime.CompilerServices]*,[*.Tests]*,[*.UnitTests]*,[*.IntegrationTests]*,[MinimalApiPerformanceDemo.Api.UnitTests]*,[MinimalApiPerformanceDemo.Api.IntegrationTests]*</Exclude>
         </Configuration>
       </DataCollector>
     </DataCollectors>

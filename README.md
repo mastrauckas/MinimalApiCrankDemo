@@ -1,8 +1,9 @@
-# MinimalApiCrankDemo: Inefficient Baseline
+# MinimalApiPerformanceDemo: Inefficient Baseline
 
 A .NET 10 Minimal API lab for measuring intentionally inefficient SQL Server,
-EF Core, and ASP.NET Core Identity access with Crank and Bombardier. SQL Server
-runs in a container; the API listens on `http://localhost:8640`.
+EF Core, and ASP.NET Core Identity access. Crank, k6, and Siege configurations
+live alongside the same API; SQL Server runs in a container and the API listens
+on `http://localhost:8640`.
 
 The self-contained inefficient baseline is under `01-inefficient`. It
 intentionally contains no optimized implementation or comparison solution.
@@ -12,17 +13,26 @@ Run the remaining commands from that directory:
 Set-Location .\01-inefficient
 ```
 
+## Benchmark tools
+
+All tools exercise the same API and database; the application is not copied per
+tool. Benchmark assets are grouped by tool beneath `benchmarks/`:
+
+- `benchmarks/crank/` contains the current authenticated products benchmark.
+- `benchmarks/k6/` is reserved for the equivalent k6 scenario.
+- `benchmarks/siege/` is reserved for the equivalent Siege scenario.
+
 ## Architecture
 
-- `MinimalApiCrankDemo.Api` owns HTTP endpoint mapping, authentication,
+- `MinimalApiPerformanceDemo.Api` owns HTTP endpoint mapping, authentication,
   middleware, and dependency injection. Startup only starts the API.
-- `MinimalApiCrankDemo.Application` owns DTOs, repository abstractions,
+- `MinimalApiPerformanceDemo.Application` owns DTOs, repository abstractions,
   application-service interfaces, and application services. It has no EF Core
   dependency.
-- `MinimalApiCrankDemo.Database` owns Identity/database entities, the DbContext,
+- `MinimalApiPerformanceDemo.Database` owns Identity/database entities, the DbContext,
   entity configurations, the design-time context factory, and schema-only EF
   Core migrations. It contains no seed data.
-- `MinimalApiCrankDemo.Infrastructure` implements application repositories with
+- `MinimalApiPerformanceDemo.Infrastructure` implements application repositories with
   Identity and intentionally chatty EF Core queries.
 - Integration and benchmark SQL data lives under `seed/`, outside every
   application project.
@@ -72,7 +82,7 @@ Run these commands from `01-inefficient`:
 podman --version
 podman machine start
 podman info
-dotnet test .\MinimalApiCrankDemo.slnx
+dotnet test .\MinimalApiPerformanceDemo.slnx
 ```
 
 `podman --version` confirms that the Podman CLI is installed. On Windows,
@@ -86,13 +96,13 @@ Run these commands from `01-inefficient`:
 
 ```powershell
 docker version
-$env:CRANK_DEMO_CONTAINER_RUNTIME = 'docker'
-dotnet test .\MinimalApiCrankDemo.slnx
-Remove-Item Env:CRANK_DEMO_CONTAINER_RUNTIME
+$env:PERFORMANCE_DEMO_CONTAINER_RUNTIME = 'docker'
+dotnet test .\MinimalApiPerformanceDemo.slnx
+Remove-Item Env:PERFORMANCE_DEMO_CONTAINER_RUNTIME
 ```
 
 `docker version` confirms that Docker Desktop or Docker Engine is running.
-Set `CRANK_DEMO_CONTAINER_RUNTIME` to select Docker for that PowerShell
+Set `PERFORMANCE_DEMO_CONTAINER_RUNTIME` to select Docker for that PowerShell
 session. Remove it afterward to restore the Podman default.
 
 You can also press **Run Tests** in the IDE. The integration-test lifecycle is:
@@ -101,7 +111,7 @@ You can also press **Run Tests** in the IDE. The integration-test lifecycle is:
 2. Remove the previous test container and named volume.
 3. Start a fresh test-only SQL Server container.
 4. Authenticate from Windows through `127.0.0.1:14333`.
-5. Recreate the disposable `CrankDemo` database.
+5. Recreate the disposable `PerformanceDemo` database.
 6. Run `scripts/Invoke-LocalMigrations.ps1`.
 7. Verify migrations inserted no Identity or application seed data.
 8. Run `scripts/Seed-IntegrationDatabase.ps1` twice.
@@ -149,7 +159,7 @@ $saCredential = Get-Credential -UserName sa
 $env:MSSQL_SA_PASSWORD = $saCredential.GetNetworkCredential().Password
 $env:SQLSERVER_HOST = '127.0.0.1'
 $env:SQLSERVER_PORT = '14333'
-$env:SQLSERVER_DATABASE = 'CrankDemo'
+$env:SQLSERVER_DATABASE = 'PerformanceDemo'
 $env:SQLSERVER_USER = 'sa'
 podman compose up -d sqlserver
 ```
@@ -200,8 +210,8 @@ equivalent EF Core command:
 
 ```powershell
 dotnet tool run dotnet-ef migrations bundle `
-  --project .\src\MinimalApiCrankDemo.Database `
-  --startup-project .\src\MinimalApiCrankDemo.Database `
+  --project .\src\MinimalApiPerformanceDemo.Database `
+  --startup-project .\src\MinimalApiPerformanceDemo.Database `
   --output .\artifacts\migration-bundles\1.0.0\efbundle.exe `
   --force
 ```
@@ -262,7 +272,7 @@ For a complete Podman benchmark run:
 ```
 
 The script creates a dedicated benchmark SQL Server container and volume. It
-uses database `CrankDemoBenchmark` through `127.0.0.1:14334`, runs migrations
+uses database `PerformanceDemoBenchmark` through `127.0.0.1:14334`, runs migrations
 and benchmark seeding, starts the API on port 8640, logs in through Identity,
 and runs the existing products scenario. It stops only the API afterward and
 leaves SQL Server running for inspection.
@@ -300,11 +310,12 @@ SQL password from the existing benchmark container, starts the API, runs Crank,
 and stops the API afterward. It does not recreate the container, migrate the
 database, or seed data. If the API is already running, it uses that instance.
 
-Both entry points save timestamped JSON results under `artifacts/crank/` and
-print the exact result path. The scenario remains in `crank/crank.yml`; bearer
+Both entry points save timestamped JSON results under
+`artifacts/benchmarks/crank/` and print the exact result path. The scenario
+remains in `benchmarks/crank/crank.yml`; bearer
 tokens and SQL Server passwords are never written to the result file or logs.
 
-`crank/Run-Crank.ps1` is now the lower-level scenario runner. It expects a
+`benchmarks/crank/Run-Crank.ps1` is now the lower-level scenario runner. It expects a
 bearer token and result path, so use the two entry points above for normal
 benchmark work.
 
@@ -318,6 +329,6 @@ Products independently reloads the user, preferences, roles, and grants. It
 then loads a product index and performs redundant per-product queries for the
 product, category, inventory, prices, reviews, and related products.
 
-Comments in `MinimalApiCrankDemo.Infrastructure/Repositories` label these
+Comments in `MinimalApiPerformanceDemo.Infrastructure/Repositories` label these
 optimization targets. Possible experiments include composed projections,
 joins, eager or batched loading, compiled queries, and caching.

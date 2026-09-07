@@ -20,7 +20,7 @@ if (-not (Test-Path -LiteralPath $resolvedBundlePath -PathType Leaf)) {
     throw "Migration bundle not found: $resolvedBundlePath"
 }
 
-$connectionVariable = 'ConnectionStrings__CrankDemo'
+$connectionVariable = 'ConnectionStrings__PerformanceDemo'
 $originalConnection = [Environment]::GetEnvironmentVariable(
     $connectionVariable,
     [EnvironmentVariableTarget]::Process)
@@ -29,17 +29,17 @@ $migrationExitCode = $null
 try {
     # The design-time factory constructs the context before EF processes the
     # bundle's --connection override, so it also needs the in-memory value.
-    $env:ConnectionStrings__CrankDemo = $ConnectionString
+    $env:ConnectionStrings__PerformanceDemo = $ConnectionString
     & $resolvedBundlePath --connection $ConnectionString
     $migrationExitCode = $LASTEXITCODE
 }
 finally {
     if ($null -eq $originalConnection) {
-        Remove-Item Env:ConnectionStrings__CrankDemo `
+        Remove-Item Env:ConnectionStrings__PerformanceDemo `
             -ErrorAction SilentlyContinue
     }
     else {
-        $env:ConnectionStrings__CrankDemo = $originalConnection
+        $env:ConnectionStrings__PerformanceDemo = $originalConnection
     }
 }
 

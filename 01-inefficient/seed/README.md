@@ -1,6 +1,6 @@
 # Database setup SQL
 
-`001-recreate-database.sql` removes and recreates the disposable `CrankDemo`
+`001-recreate-database.sql` removes and recreates the disposable `PerformanceDemo`
 database. It creates no schema and inserts no data.
 
 The Database project owns schema-only EF Core migrations. After migrations,

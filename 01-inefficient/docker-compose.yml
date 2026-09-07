@@ -1,19 +1,19 @@
-name: minimal-api-crank-demo
+name: minimal-api-performance-demo
 
 services:
   sqlserver:
     image: mcr.microsoft.com/mssql/server:2022-latest
-    container_name: crankdemo-sqlserver
+    container_name: performancedemo-sqlserver
     environment:
       ACCEPT_EULA: "Y"
       MSSQL_PID: Developer
       MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD}
-      SQLSERVER_DATABASE: CrankDemo
+      SQLSERVER_DATABASE: PerformanceDemo
       SQLSERVER_USER: sa
     ports:
       - "14333:1433"
     volumes:
-      - crankdemo-sqlserver-data:/var/opt/mssql
+      - performancedemo-sqlserver-data:/var/opt/mssql
       - ./seed:/seed:ro
     healthcheck:
       test:
@@ -27,5 +27,5 @@ services:
       start_period: 20s
 
 volumes:
-  crankdemo-sqlserver-data:
-    name: crankdemo-sqlserver-data
+  performancedemo-sqlserver-data:
+    name: performancedemo-sqlserver-data

@@ -8,11 +8,11 @@ param(
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $databaseProject = Join-Path $projectRoot `
-    'src/MinimalApiCrankDemo.Database'
+    'src/MinimalApiPerformanceDemo.Database'
 $bundleDirectory = Join-Path $projectRoot `
     "artifacts/migration-bundles/$Version"
 $bundlePath = Join-Path $bundleDirectory 'efbundle.exe'
-$connectionVariable = 'ConnectionStrings__CrankDemo'
+$connectionVariable = 'ConnectionStrings__PerformanceDemo'
 $originalConnection = [Environment]::GetEnvironmentVariable(
     $connectionVariable,
     [EnvironmentVariableTarget]::Process)
@@ -22,8 +22,8 @@ New-Item -ItemType Directory -Path $bundleDirectory -Force | Out-Null
 Push-Location $projectRoot
 try {
     # EF requires provider options at design time but does not connect here.
-    $env:ConnectionStrings__CrankDemo =
-        'Server=unused;Database=CrankDemo;Integrated Security=True;Encrypt=True'
+    $env:ConnectionStrings__PerformanceDemo =
+        'Server=unused;Database=PerformanceDemo;Integrated Security=True;Encrypt=True'
 
     dotnet tool restore
     if ($LASTEXITCODE -ne 0) {
@@ -43,11 +43,11 @@ try {
 }
 finally {
     if ($null -eq $originalConnection) {
-        Remove-Item Env:ConnectionStrings__CrankDemo `
+        Remove-Item Env:ConnectionStrings__PerformanceDemo `
             -ErrorAction SilentlyContinue
     }
     else {
-        $env:ConnectionStrings__CrankDemo = $originalConnection
+        $env:ConnectionStrings__PerformanceDemo = $originalConnection
     }
 
     Pop-Location

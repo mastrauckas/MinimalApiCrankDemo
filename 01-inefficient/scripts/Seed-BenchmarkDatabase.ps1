@@ -2,11 +2,11 @@
 param(
     [Parameter()]
     [ValidateNotNullOrEmpty()]
-    [string] $ContainerName = 'crankdemo-sqlserver'
+    [string] $ContainerName = 'performancedemo-sqlserver'
 )
 
 $ErrorActionPreference = 'Stop'
-$containerRuntime = $env:CRANK_DEMO_CONTAINER_RUNTIME
+$containerRuntime = $env:PERFORMANCE_DEMO_CONTAINER_RUNTIME
 if ([string]::IsNullOrWhiteSpace($containerRuntime)) {
     $containerRuntime = 'podman'
 }

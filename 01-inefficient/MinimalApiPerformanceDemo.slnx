@@ -1,0 +1,27 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/MinimalApiPerformanceDemo.Api/MinimalApiPerformanceDemo.Api.csproj" />
+    <Project Path="src/MinimalApiPerformanceDemo.Application/MinimalApiPerformanceDemo.Application.csproj" />
+    <Project Path="src/MinimalApiPerformanceDemo.Database/MinimalApiPerformanceDemo.Database.csproj" />
+    <Project Path="src/MinimalApiPerformanceDemo.Infrastructure/MinimalApiPerformanceDemo.Infrastructure.csproj" />
+    <File Path="src/MinimalApiPerformanceDemo.Api/appsettings.json" />
+    <File Path="src/MinimalApiPerformanceDemo.Api/appsettings.Development.json" />
+    <File Path="src/MinimalApiPerformanceDemo.Api/appsettings.Staging.json" />
+    <File Path="src/MinimalApiPerformanceDemo.Api/appsettings.Production.json" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/MinimalApiPerformanceDemo.Api.IntegrationTests/MinimalApiPerformanceDemo.Api.IntegrationTests.csproj" />
+    <Project Path="tests/MinimalApiPerformanceDemo.Api.UnitTests/MinimalApiPerformanceDemo.Api.UnitTests.csproj" />
+    <File Path="tests/MinimalApiPerformanceDemo.Api.IntegrationTests/appsettings.IntegrationTests.json" />
+  </Folder>
+  <Folder Name="/http-files/">
+    <File Path="http-files/demo.http" />
+    <File Path="http-files/health.http" />
+  </Folder>
+  <Folder Name="/infrastructure/">
+    <File Path="docker-compose.yml" />
+    <File Path="docker-compose.benchmark.yml" />
+    <File Path="docker-compose.integration-tests.yml" />
+    <File Path="benchmarks/crank/crank.yml" />
+  </Folder>
+</Solution>

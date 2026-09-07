@@ -12,8 +12,8 @@ $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $composeFile = Join-Path $projectRoot 'docker-compose.benchmark.yml'
 $runtimeCommand = $ContainerRuntime.ToLowerInvariant()
-$containerName = 'crankdemo-benchmark-sqlserver'
-$databaseName = 'CrankDemoBenchmark'
+$containerName = 'performancedemo-benchmark-sqlserver'
+$databaseName = 'PerformanceDemoBenchmark'
 $databaseHost = '127.0.0.1'
 $databasePort = '14334'
 $databaseUser = 'sa'
@@ -22,13 +22,13 @@ $apiProcess = $null
 $benchmarkStarted = $false
 $runtimeAvailable = $false
 $environmentNames = @(
-    'CRANK_DEMO_CONTAINER_RUNTIME',
+    'PERFORMANCE_DEMO_CONTAINER_RUNTIME',
     'MSSQL_SA_PASSWORD',
     'SQLSERVER_HOST',
     'SQLSERVER_PORT',
     'SQLSERVER_DATABASE',
     'SQLSERVER_USER',
-    'ConnectionStrings__CrankDemo'
+    'ConnectionStrings__PerformanceDemo'
 )
 $originalEnvironment = @{}
 
@@ -134,7 +134,7 @@ try {
 
     $passwordBytes =
         [Security.Cryptography.RandomNumberGenerator]::GetBytes(32)
-    $env:CRANK_DEMO_CONTAINER_RUNTIME = $runtimeCommand
+    $env:PERFORMANCE_DEMO_CONTAINER_RUNTIME = $runtimeCommand
     $env:MSSQL_SA_PASSWORD =
         "Aa1!$([Convert]::ToHexString($passwordBytes))"
     $env:SQLSERVER_HOST = $databaseHost

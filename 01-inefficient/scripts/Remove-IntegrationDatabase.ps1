@@ -5,15 +5,15 @@ $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $composeFile = Join-Path $projectRoot `
     'docker-compose.integration-tests.yml'
-$containerName = 'crankdemo-integration-sqlserver'
-$volumeName = 'crankdemo-integration-sqlserver-data'
-$networkName = 'minimal-api-crank-demo-integration-tests_default'
-$containerRuntime = $env:CRANK_DEMO_CONTAINER_RUNTIME
+$containerName = 'performancedemo-integration-sqlserver'
+$volumeName = 'performancedemo-integration-sqlserver-data'
+$networkName = 'minimal-api-performance-demo-integration-tests_default'
+$containerRuntime = $env:PERFORMANCE_DEMO_CONTAINER_RUNTIME
 if ([string]::IsNullOrWhiteSpace($containerRuntime)) {
     $containerRuntime = 'podman'
 }
 if ($containerRuntime -notin @('podman', 'docker')) {
-    throw 'CRANK_DEMO_CONTAINER_RUNTIME must be podman or docker.'
+    throw 'PERFORMANCE_DEMO_CONTAINER_RUNTIME must be podman or docker.'
 }
 
 Push-Location $projectRoot

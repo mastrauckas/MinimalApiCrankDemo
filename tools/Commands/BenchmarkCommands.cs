@@ -187,8 +187,36 @@ internal static class BenchmarkCommands
         var result = Path.Combine(directory, $"products-{DateTime.UtcNow:yyyyMMdd-HHmmss}.json");
         using var agent = Process.Start(new ProcessStartInfo("crank-agent", "--url http://localhost:5010") { UseShellExecute = false }) ?? throw new InvalidOperationException("Could not start crank-agent.");
         await Task.Delay(TimeSpan.FromSeconds(2));
-        try { await ProcessRunner.RunAsync("crank", ["--config", Path.Combine(context.RepositoryRoot, "benchmarks", "crank", "crank.yml"), "--scenario", "products", "--profile", "local", "--variable", $"bearerToken={token}", "--no-metadata", "--json", result], context.RepositoryRoot); }
+        try
+        {
+            await ProcessRunner.RunAsync("crank", ["--config", Path.Combine(context.RepositoryRoot, "benchmarks", "crank", "crank.yml"), "--scenario", "products", "--profile", "local", "--variable", $"bearerToken={token}", "--no-metadata", "--json", result], context.RepositoryRoot);
+            await PrintCrankSummaryAsync(result);
+        }
         finally { if (!agent.HasExited) agent.Kill(entireProcessTree: true); }
+    }
+
+    private static async Task PrintCrankSummaryAsync(string resultPath)
+    {
+        using var document = JsonDocument.Parse(await File.ReadAllTextAsync(resultPath));
+        var results = document.RootElement
+            .GetProperty("jobResults")
+            .GetProperty("jobs")
+            .GetProperty("load")
+            .GetProperty("results");
+
+        static double Metric(JsonElement results, string name) =>
+            results.TryGetProperty(name, out var value) ? value.GetDouble() : double.NaN;
+
+        Console.WriteLine();
+        Console.WriteLine("Crank results");
+        Console.WriteLine($"  Requests:       {Metric(results, "http/requests"):N0}");
+        Console.WriteLine($"  Bad responses:  {Metric(results, "http/requests/badresponses"):N0}");
+        Console.WriteLine($"  Requests/sec:   {Metric(results, "http/rps/mean"):N2}");
+        Console.WriteLine($"  Latency p50:    {Metric(results, "http/latency/50"):N2} ms");
+        Console.WriteLine($"  Latency p95:    {Metric(results, "http/latency/95"):N2} ms");
+        Console.WriteLine($"  Latency p99:    {Metric(results, "http/latency/99"):N2} ms");
+        Console.WriteLine($"  Max latency:    {Metric(results, "http/latency/max"):N2} ms");
+        Console.WriteLine($"  Results file:   {resultPath}");
     }
 
     private static async Task EnsureDotnetToolAsync(ToolContext context, string package)
